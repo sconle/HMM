@@ -2,7 +2,7 @@ import numpy as np
 
 def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
     cluster_measure = 'error',Pstructure = None,Pistructure = None,\
-    GammaInit = [], repetitions =100, nwin = 0):
+    GammaInit = [], repetitions =100, nwin = 0): 
     """
     clustering of the time-point-by-time-point regressions, which is
     temporally constrained unlike TUDA
