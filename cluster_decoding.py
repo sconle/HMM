@@ -42,11 +42,11 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
     if swin > 1 :
         X = X[to_use,:,:]
         X = np.reshape(X,[swin, nwin, N, p])
-        X = np.permute(X,[2, 1, 3, 4])
+        X = np.transpose(X,[2, 1, 3, 4])
         X = np.reshape(X,[nwin, N*swin, p])
         Y = Y[to_use,:,:]
         Y = np.reshape(Y,[swin, nwin, N, q])
-        Y = np.permute(Y,[2, 1, 3, 4])
+        Y = np.transpose(Y,[2, 1, 3, 4])
         Y = np.reshape(Y,[nwin, N*swin, q])
         ttrial0 = ttrial; N0 = N
         ttrial = nwin; N = N*swin; T = nwin * np.ones((N,1))
