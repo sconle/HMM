@@ -52,3 +52,17 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
         ttrial = nwin; N = N*swin; T = nwin * np.ones((N,1))
 
 
+####### Suite de Val ici ###########
+
+    elif cluster_method == "hierarchical":
+        beta = np.zeros((p, q), ttrial)
+
+    for t in range(len(ttrial)):
+        Xt = np.transpose(X[t, :, :], (1, 2, 0))
+        Yt = np.transpose(Y[t, :, :], (1, 2, 0))
+        beta[:, :, t] = (np.transpose(Xt) @ Xt) @ np.invert(np.transpose(Xt) @ Yt)
+
+
+
+print("Done")
+
