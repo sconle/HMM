@@ -27,3 +27,28 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
         nwin = min(50,ttrial)
         swin = int(ttrial/nwin)
 
+    to_use = np.ones((ttrial,1),dtype=bool)
+
+
+    if swin > 1:
+        r = np.remainder(ttrial,nwin)
+        if r > 0:
+            to_use[:-r] = False
+
+
+    X = np.reshape(X,[ttrial, N, p])
+    Y = np.reshape(Y,[ttrial, N, q])
+
+    if swin > 1 :
+        X = X[to_use,:,:]
+        X = np.reshape(X,[swin, nwin, N, p])
+        X = np.permute(X,[2, 1, 3, 4])
+        X = np.reshape(X,[nwin, N*swin, p])
+        Y = Y[to_use,:,:]
+        Y = np.reshape(Y,[swin, nwin, N, q])
+        Y = np.permute(Y,[2, 1, 3, 4])
+        Y = np.reshape(Y,[nwin, N*swin, q])
+        ttrial0 = ttrial; N0 = N
+        ttrial = nwin; N = N*swin; T = nwin * np.ones((N,1))
+
+
