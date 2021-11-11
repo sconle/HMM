@@ -17,6 +17,12 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
     OUTPUT
         Gamma: (trial time by K), containing the cluster assignments
     """
+
+    def smooth(a, n=3) :
+        ret = np.cumsum(a, dtype=float)
+        ret[n:] = ret[n:] - ret[:-n]
+        return ret[n - 1:] / n
+
     N = np.shape(T); p = np.shape(X)[1]; q = np.shape(Y)[1]; ttrial = T[0]
 
     if Pstructure == None : Pstructure = np.ones((K,1), dtype=bool)
@@ -51,4 +57,61 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
         ttrial0 = ttrial; N0 = N
         ttrial = nwin; N = N*swin; T = nwin * np.ones((N,1))
 
+        if cluster_method=='regression':
+            max_cyc = 100; reg_parameter = 1e-5; smooth_parameter = 1
+            # start with no constraints
+            if GammaInit == []:
+                Gamma = cluster_decoding(np.reshape(X,[ttrial*N, p]),np.reshape(Y,[ttrial*N, q]),\
+                    T,K,'sequential',[],[],[],[],10,1)
+            else:
+                Gamma = GammaInit; 
 
+            assig = np.zeros((ttrial,1))
+            for t in range(ttrial):
+                assig[t] = np.nonzero(Gamma[t,:]==1)
+            for t in range(ttrial):
+                assig(t) = np.nonzero(Gamma[t,:]==1)
+            j1 = assig[0]
+            if ~Pistructure(j1): # is it consistent with constraint?
+                j = np.nonzero(Pistructure,1)
+                Gamma_j = Gamma[:,j]
+                Gamma[:,j] = Gamma[:,j1]
+                Gamma[:,j1] = Gamma_j
+                for t in range(ttrial):
+                     assig(t) = np.nonzero(Gamma[t,:]==1)
+
+            assig_pr = assig
+            beta = np.zeros((p,q,K))
+            err = np.zeros((ttrial,K))
+            for cyc in range(max_cyc):
+                # M
+                for k in range(K):
+                    ind = assig==k
+                    Xstar = np.reshape(X[ind,:,:],[sum(ind)*N, p])
+                    Ystar = np.reshape(Y[ind,:,:],[sum(ind)*N, q])
+                    beta[:,:,k] = (Xstar.T * Xstar + reg_parameter * np.eye(size(Xstar,2)))*(Xstar.T * Ystar)^(-1)
+
+                # E
+                Y = np.reshape(Y,[ttrial*N, q])
+                for k in range(K):
+                    Yhat = np.reshape(X,[ttrial*N, p]) * beta[:,:,k]
+                    e = np.sum(np.pow((Y - Yhat),2),2)
+                    e = np.reshape(e,[ttrial, N])
+                    err[:,k] = np.sum(e,2)
+                    err[:,k] = smooth(err[:,k],smooth_parameter)
+
+                Y = np.reshape(Y,[ttrial, N, q])
+                err(1,~Pistructure) = float('inf') 
+                [~,assig(1)] = min(err(1,:)) ########
+                for t in range(1,ttrial):
+                    err(t,~Pstructure(assig[t-1],:)) = Inf#############""
+                    [~,assig(t)] = min(err[t,:])###########
+
+                # terminate?
+                #if ~all(Pstructure(:)), keyboard; end
+                if all(assig_pr==assig):
+                    break
+                assig_pr = assig
+            for t in range(ttrial):
+                Gamma[t,:] = 0
+                Gamma[t,assig(t)] = 1
