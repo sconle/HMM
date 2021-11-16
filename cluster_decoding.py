@@ -91,7 +91,7 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
                     Ystar = np.reshape(Y[ind,:,:],[sum(ind)*N, q])
 
                     #### a modif avec des @
-                    beta[:,:,k] = (Xstar.T * Xstar + reg_parameter * np.eye(size(Xstar,2)))*(Xstar.T * Ystar)^(-1)
+                    beta[:,:,k] = (Xstar.T * Xstar + reg_parameter * np.eye(np.size(Xstar,2)))*(Xstar.T * Ystar)^(-1)
 
                 # E
                 Y = np.reshape(Y,[ttrial*N, q])
@@ -117,3 +117,23 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
             for t in range(ttrial):
                 Gamma[t,:] = 0
                 Gamma[t,assig(t)] = 1
+                
+        else : #'fixedsequential'
+            assig = np.ceil(K*[t/ttrial for t in range(1,ttrial)])
+
+
+        Gamma = np.zeros(ttrial, K)
+        for k  in range(K):
+            Gamma[assig==k,k] = 1
+
+
+        if swin > 1 : 
+            Gamma1 = Gamma
+            Gamma = np.zeros(ttrial0-r,K)
+            for k  in range(K):
+                g = np.repmat(Gamma1[:,k].T,[swin, 1])
+                Gamma[:,k] = g[:]
+
+            if r > 0 :
+                Gamma = [[Gamma],
+                         [np.repmat(Gamma[-1,:],[r, 1])]]
