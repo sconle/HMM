@@ -68,17 +68,15 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
 
             assig = np.zeros((ttrial,1))
             for t in range(ttrial):
-                assig[t] = np.nonzero(Gamma[t,:]==1)
-            for t in range(ttrial):
-                assig(t) = np.nonzero(Gamma[t,:]==1)
+                assig[t] = np.nonzero([1 if g==1 else 0 for g in Gamma[t,:]])
             j1 = assig[0]
-            if ~Pistructure(j1): # is it consistent with constraint?
+            if not Pistructure(j1): # is it consistent with constraint?
                 j = np.nonzero(Pistructure,1)
                 Gamma_j = Gamma[:,j]
                 Gamma[:,j] = Gamma[:,j1]
                 Gamma[:,j1] = Gamma_j
                 for t in range(ttrial):
-                     assig(t) = np.nonzero(Gamma[t,:]==1)
+                     assig[t] = np.nonzero([1 if g==1 else 0 for g in Gamma[t,:]])
 
             assig_pr = assig
             beta = np.zeros((p,q,K))
@@ -103,11 +101,13 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
                     err[:,k] = smooth(err[:,k],smooth_parameter)
 
                 Y = np.reshape(Y,[ttrial, N, q])
-                err(1,~Pistructure) = float('inf') 
-                assig(1) = np.argmin(err[1,:]) 
+                #err[1, not Pistructure] = float('inf')
+                err[1,:] = [float('inf') if not p else None for p in Pistructure]
+
+                assig[1] = np.argmin(err[1,:]) 
                 for t in range(1,ttrial):
-                    err[t,~Pstructure[assig[t-1],:]] = np.Infinity
-                    assig(t) = np.argmin(err[t,:])
+                    err[t,:] = [float('inf') if not p else None for p in Pstructure[assig[t-1],:]]
+                    assig[t] = np.argmin(err[t,:])
 
                 # terminate?
                 #if ~all(Pstructure(:)), keyboard; end
@@ -124,7 +124,8 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
 
         Gamma = np.zeros(ttrial, K)
         for k  in range(K):
-            Gamma[assig==k,k] = 1
+            #Gamma[assig==k,k] = 1
+            Gamma[:,k] = [1 if a==k else None for a in assig]
 
 
         if swin > 1 : 
