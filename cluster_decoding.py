@@ -74,9 +74,9 @@ def cluster_decoding(X, Y, T, K, cluster_method = 'regression',\
             dist2 = np.zeros(ttrial, ttrial)
             Xstar = np.reshape(X,ttrial*N, p)  #Espace chelou sur matlab
             c = 1
-            for t2 in range(1,ttrial-1):  #Est ce que la boucle doit se terminer à ttrial-1 ou ttrial ?
+            for t2 in range(0, ttrial):  #Est ce que la boucle doit se terminer à ttrial-1 ou ttrial ?
                 d2 = Xstar * beta[:, :, t2]
-                for t1 in range(t2+1,ttrial):  ## Idem que 2 lignes avant
+                for t1 in range(t2, ttrial+1):  ## Idem que 2 lignes avant
                     d1 = Xstar * beta[:, :, t1]
                     dist[c] = np.sqrt(np.sum(np.sum((d1 - d2)**2)))
                     dist2[t1, t2] = dist[c]
@@ -86,10 +86,10 @@ def cluster_decoding(X, Y, T, K, cluster_method = 'regression',\
             dist = np.zeros(ttrial * (ttrial - 1) / 2, 1)
             dist2 = np.zeros(ttrial, ttrial)
             c = 1
-            for t2 in range(1, ttrial-1):  # Idem
+            for t2 in range(0, ttrial):  # Idem
                 Xt2 = np.transpose(X[t2, :, :], (1, 2, 0))
                 Yt2 = np.transpose(Y[t2, :, :], (1, 2, 0))
-                for t1 in range(t2+1, ttrial):  # Idem
+                for t1 in range(t2, ttrial+1):  # Idem
                     Xt1 = np.transpose(X[t1, :, :], (1, 2, 0))
                     Yt1 = np.transpose(Y[t1, :, :], (1, 2, 0))
                     error1 = np.sqrt(np.sum(np.sum((Xt1 * beta[:, :, t2] - Yt1)**2)))
