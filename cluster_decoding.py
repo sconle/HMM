@@ -89,6 +89,8 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
                     ind = assig==k
                     Xstar = np.reshape(X[ind,:,:],[sum(ind)*N, p])
                     Ystar = np.reshape(Y[ind,:,:],[sum(ind)*N, q])
+
+                    #### a modif avec des @
                     beta[:,:,k] = (Xstar.T * Xstar + reg_parameter * np.eye(size(Xstar,2)))*(Xstar.T * Ystar)^(-1)
 
                 # E
@@ -102,10 +104,10 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
 
                 Y = np.reshape(Y,[ttrial, N, q])
                 err(1,~Pistructure) = float('inf') 
-                [~,assig(1)] = min(err(1,:)) ########
+                assig(1) = np.argmin(err[1,:]) 
                 for t in range(1,ttrial):
-                    err(t,~Pstructure(assig[t-1],:)) = Inf#############""
-                    [~,assig(t)] = min(err[t,:])###########
+                    err[t,~Pstructure[assig[t-1],:]] = np.Infinity
+                    assig(t) = np.argmin(err[t,:])
 
                 # terminate?
                 #if ~all(Pstructure(:)), keyboard; end
