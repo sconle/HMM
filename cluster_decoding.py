@@ -1,7 +1,12 @@
 import numpy as np
+from scipy.spatial import distance
+from scipy.cluster.hierarchy import linkage
+from scipy.cluster.hierarchy import to_tree
+from scipy.cluster.hierarchy import fcluster
 
-def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
-    cluster_measure = 'error',Pstructure = None,Pistructure = None,\
+
+def cluster_decoding(X, Y, T, K, cluster_method = 'regression',\
+    cluster_measure = 'error', Pstructure = None, Pistructure = None,\
     GammaInit = [], repetitions =100, nwin = 0): 
     """
     clustering of the time-point-by-time-point regressions, which is
@@ -54,13 +59,59 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
 
 ####### Suite de Val ici ###########
 
+####### Début Methode Hierarchical #######
+
     elif cluster_method == "hierarchical":
         beta = np.zeros((p, q), ttrial)
 
-    for t in range(len(ttrial)):
-        Xt = np.transpose(X[t, :, :], (1, 2, 0))
-        Yt = np.transpose(Y[t, :, :], (1, 2, 0))
-        beta[:, :, t] = (np.transpose(Xt) @ Xt) @ np.invert(np.transpose(Xt) @ Yt)
+        for t in range(len(ttrial)):
+            Xt = np.transpose(X[t, :, :], (1, 2, 0))
+            Yt = np.transpose(Y[t, :, :], (1, 2, 0))
+            beta[:, :, t] = (np.transpose(Xt) @ Xt) @ np.invert(np.transpose(Xt) @ Yt)
+
+        if cluster_measure == "response":
+            dist = np.zeros(ttrial*(ttrial-1)/2, 1)
+            dist2 = np.zeros(ttrial, ttrial)
+            Xstar = np.reshape(X,ttrial*N, p)  #Espace chelou sur matlab
+            c = 1
+            for t2 in range(1,ttrial-1):  #Est ce que la boucle doit se terminer à ttrial-1 ou ttrial ?
+                d2 = Xstar * beta[:, :, t2]
+                for t1 in range(t2+1,ttrial):  ## Idem que 2 lignes avant
+                    d1 = Xstar * beta[:, :, t1]
+                    dist[c] = np.sqrt(np.sum(np.sum((d1 - d2)**2)))
+                    dist2[t1, t2] = dist[c]
+                    dist2[t2, t1] = dist[c]
+                    c += 1
+        elif cluster_measure == "error":
+            dist = np.zeros(ttrial * (ttrial - 1) / 2, 1)
+            dist2 = np.zeros(ttrial, ttrial)
+            c = 1
+            for t2 in range(1, ttrial-1):  # Idem
+                Xt2 = np.transpose(X[t2, :, :], (1, 2, 0))
+                Yt2 = np.transpose(Y[t2, :, :], (1, 2, 0))
+                for t1 in range(t2+1, ttrial):  # Idem
+                    Xt1 = np.transpose(X[t1, :, :], (1, 2, 0))
+                    Yt1 = np.transpose(Y[t1, :, :], (1, 2, 0))
+                    error1 = np.sqrt(np.sum(np.sum((Xt1 * beta[:, :, t2] - Yt1)**2)))
+                    error2 = np.sqrt(np.sum(np.sum((Xt2 * beta[:, :, t1] - Yt2) ** 2)))
+                    dist[c] = error1 + error2
+                    c += 1
+                    dist2[t1, t2] = error1 + error2
+                    dist[t2, t1] = error1 + error2
+
+        elif cluster_measure == "beta":
+            beta = np.transpose(beta, [2, 0, 1])
+            beta = np.reshape(beta, [ttrial, p*q])  #Il manque  une virgule sur matlab
+            dist = distance.pdist(beta)
+
+        if distance.is_valid_dm(np.transpose(dist)):
+            link = to_tree(linkage(np.transpose(dist), "ward")) ## A checker
+        else:
+            link = to_tree(linkage(np.transpose(dist)))
+
+        assig = fcluster(link, criterion="maxclust", R=K)  #Est ce que c'est la bonne fct ?
+
+####### Fin Methode Hierarchical #######
 
 
 
