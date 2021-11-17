@@ -74,6 +74,7 @@ def cluster_decoding(X, Y, T, K, cluster_method = 'regression',\
             dist2 = np.zeros(ttrial, ttrial)
             Xstar = np.reshape(X,ttrial*N, p)  #Espace chelou sur matlab
             c = 1
+
             for t2 in range(0, ttrial):  #Est ce que la boucle doit se terminer à ttrial-1 ou ttrial ?
                 d2 = Xstar * beta[:, :, t2]
                 for t1 in range(t2, ttrial+1):  ## Idem que 2 lignes avant
@@ -82,18 +83,20 @@ def cluster_decoding(X, Y, T, K, cluster_method = 'regression',\
                     dist2[t1, t2] = dist[c]
                     dist2[t2, t1] = dist[c]
                     c += 1
+
         elif cluster_measure == "error":
             dist = np.zeros(ttrial * (ttrial - 1) / 2, 1)
             dist2 = np.zeros(ttrial, ttrial)
             c = 1
+
             for t2 in range(0, ttrial):  # Idem
                 Xt2 = np.transpose(X[t2, :, :], (1, 2, 0))
                 Yt2 = np.transpose(Y[t2, :, :], (1, 2, 0))
                 for t1 in range(t2, ttrial+1):  # Idem
                     Xt1 = np.transpose(X[t1, :, :], (1, 2, 0))
                     Yt1 = np.transpose(Y[t1, :, :], (1, 2, 0))
-                    error1 = np.sqrt(np.sum(np.sum((Xt1 * beta[:, :, t2] - Yt1)**2)))
-                    error2 = np.sqrt(np.sum(np.sum((Xt2 * beta[:, :, t1] - Yt2) ** 2)))
+                    error1 = np.sqrt(sum(sum((Xt1 * beta[:, :, t2] - Yt1)**2)))
+                    error2 = np.sqrt(sum(sum((Xt2 * beta[:, :, t1] - Yt2) ** 2)))
                     dist[c] = error1 + error2
                     c += 1
                     dist2[t1, t2] = error1 + error2
@@ -112,6 +115,49 @@ def cluster_decoding(X, Y, T, K, cluster_method = 'regression',\
         assig = fcluster(link, criterion="maxclust", R=K)  #Est ce que c'est la bonne fct ?
 
 ####### Fin Methode Hierarchical #######
+
+####### Début Methode Sequential #######
+
+    elif cluster_method == "sequential":
+        regularization = 1.0
+        assig = np.zeros(ttrial, 1)
+        err = 0
+        changes = [i * np.floor(ttrial / K) for i in range(1, K)]
+        Ystar = np.reshape(Y, [ttrial*N, q])
+
+        for k in range(1, K+1):
+            assig[changes[k]:changes[k+1]] = k
+            ind = assig == k
+            Xstar = np.reshape(X[ind, :, :], [sum(ind)*N, p])
+            Ystar = np.reshape(Y[ind, :, :], [sum(ind)*N, q])
+            beta = (Xstar.T @ Xstar + 0.0001 * np.eye(np.shape(Xstar, 2))) / (Xstar.T @ Ystar)
+            err = err + np.sqrt(sum(sum((Ystar - Xstar * beta)**2, 2)))
+
+        err_best = err
+        assig_best = assig
+        for rep in range(1, repetitions):
+            assig = np.zeros(ttrial, 1)
+            while True:
+                changes = np.cumsum(regularization + np.random.rand(1, K))
+                changes = [1, np.floor(ttrial * changes / max(changes))]
+                if ~any(changes == 0) and len(np.unique(changes)) == len(changes):
+                    break
+            err = 0
+
+            for k in range(1, k+1):
+                assig[changes[k]:changes[k+1]] = k
+                ind = assig == k
+                Xstar = np.reshape(X[ind, :, :], [sum(ind)*N, p])
+                Ystar = np.reshape(Y[ind, :, :], [sum(ind)*N, q])
+                beta = (Xstar.T @ Xstar + 0.0001 * np.eye(np.shape(Xstar, 2))) / (Xstar.T @ Ystar)
+                err = err + np.sqrt(sum(sum((Ystar - Xstar * beta) ** 2, 2)))
+
+            if err < err_best:
+                err_best = err
+                assig_best = assig
+
+        assig = assig_best
+
 
 
 
