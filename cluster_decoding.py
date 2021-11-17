@@ -5,7 +5,7 @@ from scipy.cluster.hierarchy import to_tree
 from scipy.cluster.hierarchy import fcluster
 
 
-def cluster_decoding(X, Y, T, K, cluster_method = 'regression',\
+def cluster_decoding(X, Y, T, K, cluster_method='regression',\
     cluster_measure = 'error', Pstructure = None, Pistructure = None,\
     GammaInit = [], repetitions =100, nwin = 0): 
     """
@@ -158,6 +158,7 @@ def cluster_decoding(X, Y, T, K, cluster_method = 'regression',\
 
         assig = assig_best
 
+####### Fin Methode Sequential #######
 
 
 
