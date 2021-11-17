@@ -137,35 +137,35 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
     elif cluster_method == "hierarchical":
         beta = np.zeros((p, q), ttrial)
 
-        for t in range(len(ttrial)):
+        for t in range(ttrial):
             Xt = np.transpose(X[t, :, :], (1, 2, 0))
             Yt = np.transpose(Y[t, :, :], (1, 2, 0))
             beta[:, :, t] = (np.transpose(Xt) @ Xt) @ np.invert(np.transpose(Xt) @ Yt)
 
         if cluster_measure == "response":
-            dist = np.zeros(ttrial * (ttrial - 1) / 2, 1)
-            dist2 = np.zeros(ttrial, ttrial)
-            Xstar = np.reshape(X, ttrial * N, p)  # Espace chelou sur matlab
+            dist = np.zeros((ttrial * (ttrial - 1) / 2, 1))
+            dist2 = np.zeros((ttrial, ttrial))
+            Xstar = np.reshape(X, [ttrial * N, p])  # Paranthèse ou non ?
             c = 1
 
-            for t2 in range(0, ttrial):  # Est ce que la boucle doit se terminer à ttrial-1 ou ttrial ?
+            for t2 in range(ttrial-1):
                 d2 = Xstar * beta[:, :, t2]
-                for t1 in range(t2, ttrial + 1):  ## Idem que 2 lignes avant
+                for t1 in range(t2+1, ttrial):
                     d1 = Xstar * beta[:, :, t1]
-                    dist[c] = np.sqrt(np.sum(np.sum((d1 - d2) ** 2)))
+                    dist[c] = np.sqrt(sum(sum((d1 - d2) ** 2)))
                     dist2[t1, t2] = dist[c]
                     dist2[t2, t1] = dist[c]
                     c += 1
 
         elif cluster_measure == "error":
-            dist = np.zeros(ttrial * (ttrial - 1) / 2, 1)
-            dist2 = np.zeros(ttrial, ttrial)
+            dist = np.zeros((ttrial * (ttrial - 1) / 2, 1))
+            dist2 = np.zeros((ttrial, ttrial))
             c = 1
 
-            for t2 in range(0, ttrial):  # Idem
+            for t2 in range(ttrial-1):
                 Xt2 = np.transpose(X[t2, :, :], (1, 2, 0))
                 Yt2 = np.transpose(Y[t2, :, :], (1, 2, 0))
-                for t1 in range(t2, ttrial + 1):  # Idem
+                for t1 in range(t2+1, ttrial):
                     Xt1 = np.transpose(X[t1, :, :], (1, 2, 0))
                     Yt1 = np.transpose(Y[t1, :, :], (1, 2, 0))
                     error1 = np.sqrt(sum(sum((Xt1 * beta[:, :, t2] - Yt1) ** 2)))
@@ -177,15 +177,15 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
 
         elif cluster_measure == "beta":
             beta = np.transpose(beta, [2, 0, 1])
-            beta = np.reshape(beta, [ttrial, p * q])  # Il manque  une virgule sur matlab
+            beta = np.reshape(beta, [ttrial, p * q])
             dist = distance.pdist(beta)
 
-        if distance.is_valid_dm(np.transpose(dist)):
-            link = to_tree(linkage(np.transpose(dist), "ward"))  ## A checker
+        if distance.is_valid_dm(np.transpose(dist)): # A checker
+            link = to_tree(linkage(np.transpose(dist), "ward"))  # A checker
         else:
-            link = to_tree(linkage(np.transpose(dist)))
+            link = to_tree(linkage(np.transpose(dist))) # A checker
 
-        assig = fcluster(link, criterion="maxclust", R=K)  # Est ce que c'est la bonne fct ?
+        assig = fcluster(link, criterion="maxclust", R=K)  # A checker
 
 ####### Fin Methode Hierarchical #######
 
@@ -193,7 +193,7 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
 
     elif cluster_method == "sequential":
         regularization = 1.0
-        assig = np.zeros(ttrial, 1)
+        assig = np.zeros((ttrial, 1))
         err = 0
         changes = [i * np.floor(ttrial / K) for i in range(1, K)]
         Ystar = np.reshape(Y, [ttrial * N, q])
@@ -203,13 +203,13 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
             ind = assig == k
             Xstar = np.reshape(X[ind, :, :], [sum(ind) * N, p])
             Ystar = np.reshape(Y[ind, :, :], [sum(ind) * N, q])
-            beta = (Xstar.T @ Xstar + 0.0001 * np.eye(np.shape(Xstar, 2))) / (Xstar.T @ Ystar)
+            beta = (np.transpose(Xstar) @ Xstar + 0.0001 * np.eye(np.shape(Xstar, 2))) @ np.invert((np.transpose(Xstar) @ Ystar))
             err = err + np.sqrt(sum(sum((Ystar - Xstar * beta) ** 2, 2)))
 
         err_best = err
         assig_best = assig
         for rep in range(1, repetitions):
-            assig = np.zeros(ttrial, 1)
+            assig = np.zeros((ttrial, 1))
             while True:
                 changes = np.cumsum(regularization + np.random.rand(1, K))
                 changes = [1, np.floor(ttrial * changes / max(changes))]
@@ -222,7 +222,7 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
                 ind = assig == k
                 Xstar = np.reshape(X[ind, :, :], [sum(ind) * N, p])
                 Ystar = np.reshape(Y[ind, :, :], [sum(ind) * N, q])
-                beta = (Xstar.T @ Xstar + 0.0001 * np.eye(np.shape(Xstar, 2))) / (Xstar.T @ Ystar)
+                beta = (np.transpose(Xstar) @ Xstar + 0.0001 * np.eye(np.shape(Xstar, 2))) @ np.invert((np.transpose(Xstar) @ Ystar))
                 err = err + np.sqrt(sum(sum((Ystar - Xstar * beta) ** 2, 2)))
 
             if err < err_best:
@@ -239,7 +239,7 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
         assig = np.ceil(K*[t/ttrial for t in range(1,ttrial)])
 
 
-    Gamma = np.zeros(ttrial, K)
+    Gamma = np.zeros((ttrial, K))
     for k  in range(K):
         #Gamma[assig==k,k] = 1
         Gamma[:,k] = [1 if a==k else None for a in assig]
@@ -248,9 +248,9 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
 
     if swin > 1 :
         Gamma1 = Gamma
-        Gamma = np.zeros(ttrial0-r,K)
+        Gamma = np.zeros((ttrial0-r,K))
         for k  in range(K):
-            g = np.repmat(Gamma1[:,k].T,[swin, 1])
+            g = np.repmat(np.transpose(Gamma1[:,k]),[swin, 1])
             Gamma[:,k] = g[:]
 
         if r > 0 :
