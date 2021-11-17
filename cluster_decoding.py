@@ -2,7 +2,7 @@ import numpy as np
 
 def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
     cluster_measure = 'error',Pstructure = None,Pistructure = None,\
-    GammaInit = [], repetitions =100, nwin = 0): 
+    GammaInit = [], repetitions =100, nwin = 0):
     """
     clustering of the time-point-by-time-point regressions, which is
     temporally constrained unlike TUDA
@@ -37,12 +37,13 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
 
 
     if swin > 1:
-        r = np.remainder(ttrial,nwin)
+        r = np.remainder(ttrial,nwin) #d'après la doc numpy c'est plutôt np.fmod que l'on doit utiliser (https://numpy.org/doc/stable/reference/generated/numpy.fmod.html)
         if r > 0:
-            to_use[:-r] = False
+            to_use[:-r] = False #je pense plutôt que c'est to_use[-r:] puisque on  veut la fin de la liste
+                                #et il faudrait sans doute utiliser np.zeros par ex: to_use[-r:] = np.zeros((r,1),dtype=bool)
 
 
-    X = np.reshape(X,[ttrial, N, p])
+    X = np.reshape(X,[ttrial, N, p]) #c'est peut être plutôt des parenthèses que des crochets (et peut être rajouter order="F")
     Y = np.reshape(Y,[ttrial, N, q])
 
     if swin > 1 :
@@ -64,7 +65,7 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
                 Gamma = cluster_decoding(np.reshape(X,[ttrial*N, p]),np.reshape(Y,[ttrial*N, q]),\
                     T,K,'sequential',[],[],[],[],10,1)
             else:
-                Gamma = GammaInit; 
+                Gamma = GammaInit;
 
             assig = np.zeros((ttrial,1))
             for t in range(ttrial):
@@ -104,7 +105,7 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
                 #err[1, not Pistructure] = float('inf')
                 err[1,:] = [float('inf') if not p else None for p in Pistructure]
 
-                assig[1] = np.argmin(err[1,:]) 
+                assig[1] = np.argmin(err[1,:])
                 for t in range(1,ttrial):
                     err[t,:] = [float('inf') if not p else None for p in Pstructure[assig[t-1],:]]
                     assig[t] = np.argmin(err[t,:])
@@ -117,7 +118,7 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
             for t in range(ttrial):
                 Gamma[t,:] = 0
                 Gamma[t,assig(t)] = 1
-                
+
         else : #'fixedsequential'
             assig = np.ceil(K*[t/ttrial for t in range(1,ttrial)])
 
@@ -128,7 +129,7 @@ def cluster_decoding(X,Y,T,K,cluster_method = 'regression',\
             Gamma[:,k] = [1 if a==k else None for a in assig]
 
 
-        if swin > 1 : 
+        if swin > 1 :
             Gamma1 = Gamma
             Gamma = np.zeros(ttrial0-r,K)
             for k  in range(K):
