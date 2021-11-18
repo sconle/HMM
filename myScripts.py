@@ -14,10 +14,16 @@ IC=1
 
 dirname = os.path.dirname(__file__)
 filename = dirname + f"/data/su{subj}IC{IC}_rawdata.nc"
+filename2 = dirname + f"/data/su{subj}IC{IC + 2}_rawdata.nc"
 
 ds = xr.open_dataset(filename)
+ds2 = xr.open_dataset(filename2)
 
+X1 = ds['timecourse']
+X2 = ds2['timecourse']
 
-print(ds['time'])
+X = xr.concat([X1,X2], "new_dim")
+
+print(X)
 
 
