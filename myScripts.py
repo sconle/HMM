@@ -24,6 +24,17 @@ X2 = ds2['timecourse']
 
 X = xr.concat([X1,X2], "new_dim")
 
-print(X)
+trialinfo = ds['trialinfo']
+y = ((trialinfo/10000).astype(int) == 1)
+[ttrial, N, p] = np.shape(X)
+Y = np.ones((ttrial, N, 1))
+for i in range(ttrial):
+    for j in range(N):
+        Y[i, j] = y[j]
 
-
+X = np.reshape(X, (ttrial*N, p))
+Y = np.reshape(Y, (ttrial*N, 1))
+T = (np.ones((N, 1)))*ttrial
+K = 6
+cluster_method='regression'
+Gamma = cluster_decoding(X, Y, T, K, cluster_method)

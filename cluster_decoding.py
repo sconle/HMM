@@ -258,7 +258,3 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
                      [np.repmat(Gamma[-1,:],[r, 1])]]
 
 
-
-
-
-print("Done")
