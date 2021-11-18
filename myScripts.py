@@ -19,18 +19,17 @@ filename2 = dirname + f"/data/su{subj}IC{IC + 2}_rawdata.nc"
 ds = xr.open_dataset(filename)
 ds2 = xr.open_dataset(filename2)
 
-X1 = ds['timecourse']
-X2 = ds2['timecourse']
+X1 = ds['timecourse'].values[:,:,np.newaxis]
+X2 = ds2['timecourse'].values[:,:,np.newaxis]
 
-X = xr.concat([X1,X2], "new_dim")
+X = np.concatenate((X1, X2), axis=2)
 
 trialinfo = ds['trialinfo']
 y = ((trialinfo/10000).astype(int) == 1)
 [ttrial, N, p] = np.shape(X)
 Y = np.ones((ttrial, N, 1))
 for i in range(ttrial):
-    for j in range(N):
-        Y[i, j] = y[j]
+    Y[:,i]=y
 
 X = np.reshape(X, (ttrial*N, p))
 Y = np.reshape(Y, (ttrial*N, 1))
