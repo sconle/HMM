@@ -1,17 +1,22 @@
 # Storage management
 import xarray as xr   # Manages .nc (netCDF) files in Python.
                       # The states' informations are stored in a .nc file for each subject.
-from cluster_decoding import *
 
 # Scientific computing
 import numpy as np
+from cluster_decoding import *
+import os
 
-data_dir = "D:/centrale/3A/info/HMM/data/"
+#Le dossier "data" contenant les données doit se trouver dans le dossier mère
 
 subj=2
 IC=1
 
-ds = xr.open_dataset(data_dir + f"su{subj}IC{IC}_rawdata.nc")
+dirname = os.path.dirname(__file__)
+filename = dirname + f"/data/su{subj}IC{IC}_rawdata.nc"
+
+ds = xr.open_dataset(filename)
+
 
 print(ds['time'])
 
