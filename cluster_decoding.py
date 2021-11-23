@@ -30,7 +30,7 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
         ret[n:] = ret[n:] - ret[:-n]
         return ret[n - 1:] / n
 
-    N = np.shape(T); p = np.shape(X)[1]; q = np.shape(Y)[1]; ttrial = T[0]
+    N = np.shape(T)[0]; p = np.shape(X)[1]; q = np.shape(Y)[1]; ttrial = int(T[0])
 
     if Pstructure == None : Pstructure = np.ones((K,1), dtype=bool)
     if Pistructure == None : Pistructure = np.ones(K, dtype=bool)
@@ -40,18 +40,18 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
         nwin = min(50,ttrial)
         swin = int(ttrial/nwin)
 
-    to_use = np.ones((ttrial,1),dtype=bool)
+    to_use = np.ones((ttrial, 1), dtype=bool)
 
 
     if swin > 1:
-        r = np.remainder(ttrial,nwin) #d'après la doc numpy c'est plutôt np.fmod que l'on doit utiliser (https://numpy.org/doc/stable/reference/generated/numpy.fmod.html)
+        r = np.remainder(ttrial,nwin)
         if r > 0:
-            to_use[:-r] = False #je pense plutôt que c'est to_use[-r:] puisque on  veut la fin de la liste
+            to_use[-r:] = False #je pense plutôt que c'est to_use[-r:] puisque on  veut la fin de la liste
                                 #et il faudrait sans doute utiliser np.zeros par ex: to_use[-r:] = np.zeros((r,1),dtype=bool)
 
-
-    X = np.reshape(X,[ttrial, N, p]) #c'est peut être plutôt des parenthèses que des crochets (et peut être rajouter order="F")
-    Y = np.reshape(Y,[ttrial, N, q])
+    print(ttrial, N, p)
+    X = np.reshape(X, (ttrial, N, p)) #c'est peut être plutôt des parenthèses que des crochets (et peut être rajouter order="F")
+    Y = np.reshape(Y, [ttrial, N, q])
 
     if swin > 1 :
         X = X[to_use,:,:]

@@ -10,7 +10,7 @@ iseuclidean()      | distance.is_valid()
 linkage()          | to_tree(linkage()) #A vérifier
 cluster()          | fcluster() #A vérifier
 X'                 | X.T
-                   |
+rem                | np.reminder
                    |
                    |
                    |

@@ -35,5 +35,5 @@ X = np.reshape(X, (ttrial*N, p))
 Y = np.reshape(Y, (ttrial*N, 1))
 T = (np.ones((N, 1)))*ttrial
 K = 6
-cluster_method='regression'
+cluster_method = 'regression'
 Gamma = cluster_decoding(X, Y, T, K, cluster_method)
