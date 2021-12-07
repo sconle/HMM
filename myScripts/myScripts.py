@@ -3,8 +3,11 @@ import xarray as xr   # Manages .nc (netCDF) files in Python.
                       # The states' informations are stored in a .nc file for each subject.
 
 # Scientific computing
-from myHmmPackage.cluster_decoding import *
 import os
+import sys
+sys.path.append('C:/Users/vtruong/OneDrive - Sopra Steria/Documents/HMM/myHmmPackage')
+from cluster_decoding import *
+
 
 #Le dossier "data" contenant les données doit se trouver dans le dossier mère
 
