@@ -34,11 +34,11 @@ Y = np.ones((ttrial, N, 1))
 for i in range(ttrial):
     Y[i]=y
 
-print(Y.shape)
+
 
 X = np.reshape(X, (ttrial*N, p))
 Y = np.reshape(Y, (ttrial*N, 1))
 T = (np.ones((N, 1)))*ttrial
-K = 6
+K = 3
 cluster_method='regression'
 Gamma = cluster_decoding(X, Y, T, K, cluster_method)

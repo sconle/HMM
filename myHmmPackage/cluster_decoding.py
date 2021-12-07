@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.lib.function_base import insert
 from scipy.spatial import distance
 from scipy.cluster.hierarchy import linkage
 from scipy.cluster.hierarchy import to_tree
@@ -22,7 +23,10 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
     OUTPUT
         Gamma: (trial time by K), containing the cluster assignments
     """
-
+    def inspect(var):
+        print(var)
+        print(np.shape(var))
+        print('yoooooo')
 ####### Début Initialisation #######
 
     def smooth(a, n=3) :
@@ -31,7 +35,6 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
         return ret[n - 1:] / n
 
     N = np.shape(T)[0]; p = np.shape(X)[1]; q = np.shape(Y)[1]; ttrial = int(T[0])
-
 
     if Pstructure == None : Pstructure = np.ones((K,1), dtype=bool)
     if Pistructure == None : Pistructure = np.ones(K, dtype=bool)
@@ -54,14 +57,12 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
     Y = np.reshape(Y,[ttrial, N, q])
 
     if swin > 1 :
-        X = [X[i[0],:,:] for i in to_use if i[0]]
-        print('ok')
+        X = [X[i,:,:] for i in range(len(to_use)) if to_use[i]]
         X = np.reshape(X,[swin, nwin, N, p])
         X = np.transpose(X,[1, 0, 2, 3])
-        print('ok')
         X = np.reshape(X,[nwin, N*swin, p])
-        Y = Y[to_use,:,:]
-        Y = [Y[i[0],:,:] for i in to_use if i[0]]
+
+        Y = [Y[i,:,:] for i in range(len(to_use)) if to_use[i]]
         Y = np.reshape(Y,[swin, nwin, N, q])
         Y = np.transpose(Y,[1, 0, 2, 3])
         Y = np.reshape(Y,[nwin, N*swin, q])
@@ -198,15 +199,17 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
         regularization = 1.0
         assig = np.zeros((ttrial, 1))
         err = 0
-        changes = [i * np.floor(ttrial / K) for i in range(1, K)]
+        changes = [1] + [int(i * np.round(ttrial / K)) for i in range(1, K)] + [ttrial]        
         Ystar = np.reshape(Y, [ttrial * N, q])
 
         for k in range(1, K + 1):
-            assig[changes[k]:changes[k + 1]] = k
+            assig[changes[k]:changes[k+1]] = k
             ind = assig == k
-            Xstar = np.reshape(X[ind, :, :], [sum(ind) * N, p])
-            Ystar = np.reshape(Y[ind, :, :], [sum(ind) * N, q])
-            beta = (np.transpose(Xstar) @ Xstar + 0.0001 * np.eye(np.shape(Xstar, 2))) @ np.invert((np.transpose(Xstar) @ Ystar))
+            Xstar = np.reshape([X[i,:,:] for i in range(len(ind)) if ind[i]], [int(sum(ind) * N), p])
+            Ystar = np.reshape([Y[i,:,:] for i in range(len(ind)) if ind[i]], [int(sum(ind) * N), q])
+
+            inspect(Xstar.T @ Ystar)
+            beta = (np.transpose(Xstar) @ Xstar + 0.0001 * np.eye(np.shape(Xstar)[1])) @ np.invert((Xstar.T @ Ystar))
             err = err + np.sqrt(sum(sum((Ystar - Xstar * beta) ** 2, 2)))
 
         err_best = err
