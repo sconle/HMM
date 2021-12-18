@@ -1,5 +1,6 @@
 import unittest
 import numpy as np
+from matplotlib import pyplot as plt
 from numpy.testing import assert_array_equal
 from ..myHmmPackage.cluster_decoding import cluster_decoding
 
@@ -8,7 +9,7 @@ def sinusoidal_function(amplitude, frequency, time):
     return amplitude * np.sin(frequency*time)
 
 
-def burst_mask(minmax_burst_duration, time_steps_number, nb_tries, max_amplitude):
+def burst_mask(minmax_burst_duration, time_steps_number, nb_tries):
     """
     Creates a mask to be applied to a signal to keep only some random parts of it over time.
 
@@ -23,7 +24,7 @@ def burst_mask(minmax_burst_duration, time_steps_number, nb_tries, max_amplitude
         step = 0
         while step < time_steps_number:
             burst_duration = np.random.randint(minmax_burst_duration[0], minmax_burst_duration[1] + 1)
-            burst_value = np.random.randint(0, 2) * np.random.randint(1, max_amplitude + 1)
+            burst_value = np.random.randint(0, 2) * np.random.randint(1, 11)/10
             nb_steps = 0
             while nb_steps < burst_duration and step + nb_steps < time_steps_number:
                 mask[step + nb_steps, try_number] = burst_value
@@ -32,25 +33,31 @@ def burst_mask(minmax_burst_duration, time_steps_number, nb_tries, max_amplitude
     return mask
 
 
-def fake_signal_generation(nb_states, nb_tries, duration, time_steps_number):
+def fake_signal_generation(nb_states, nb_tries, time_steps_number, time_stamps):
     """
     Creates fake data to test cluster decoding function.
 
+    :param time_stamps: list containing the time values
     :param nb_states: number of different states expected in signal
     :param nb_tries: number of times the fake experiment was repeated
     :param duration: duration of the fake experiment
     :param time_steps_number: number of measures taken during duration
     :return: X, Y, T, Gamma
     """
-    minimal_burst_duration = time_steps_number // duration + 1
+
+    state_duration = time_steps_number // nb_states
     frequency = np.random.randint(1, 50, nb_states)
     amplitude = np.random.randint(1, 10, nb_states)
-    T = np.linspace(0, duration, time_steps_number)
-    X = np.array([sinusoidal_function(amplitude, frequency, T) for line in range(nb_tries)])
-    Y = np.array([])
+    X = np.zeros((time_steps_number - state_duration * nb_states, nb_tries), dtype=int)
+    for state_range in range(nb_states):
+        t = time_stamps[(nb_states - state_range - 1)*state_duration:(nb_states - state_range)*state_duration]
+        X_slice = np.array([sinusoidal_function(amplitude[state_range], frequency[state_range], t) for line in range(nb_tries)]).T
+        X = np.concatenate((X_slice, X), axis=0)
+    return X
 
-    fake_gamma = np.array([])
-    return X, Y, T, fake_gamma
+
+def fake_gamma_generation(duration):
+    return 0
 
 
 class TestClusterDecoding(unittest.TestCase):
@@ -63,19 +70,35 @@ class TestClusterDecoding(unittest.TestCase):
     - All cluster_methods ('regression', 'hierarchical', 'sequential')
         return the correct Gamma matrix when executed on fake data.
     """
+
+    # Parameters of the fake experiment
+    nb_of_measures = 100000
+    nb_of_tries = 2
+    min_max_burst_duration = [5, 10]
+    nb_states = 4
+    duration = 10
+
     # Creating a fake signal to analyse and the corresponding Gamma matrix
-    X = np.array([])
-    Y = np.array([])
-    T = np.array([])
-    fake_gamma = np.array([])
+    T = np.linspace(0, duration, nb_of_measures)
+    fake_signal = fake_signal_generation(nb_states, nb_of_tries, nb_of_measures, T)
+    mask = burst_mask(min_max_burst_duration, nb_of_measures, nb_of_tries)
+    Y = (mask > 0).astype(int)
+    print(Y)
+    noise = np.random.normal(0, 1, (nb_of_measures, nb_of_tries))
+    print(noise)
+    X = fake_signal * mask + noise
+    perfect_X = fake_signal * mask
+    fake_gamma = fake_gamma_generation(duration)
 
     def test_gamma_value_regression(self):
         """
         Testing on fake data that the Gamma matrix returned corresponds to the fake one.
         """
-        print(burst_maskbis([5, 10], 1000, 2, 10))
+        plt.plot(self.T, self.X.T[0])
+        plt.plot(self.T, self.perfect_X.T[0])
+        plt.show()
         K = 5  # Number of states chosen is arbitrary
-        gamma = cluster_decoding(self.X, self.Y, self.T, K)
+        gamma = cluster_decoding(self.perfect_X, self.Y, self.T, K)
         assert_array_equal(gamma, self.fake_gamma, err_msg="Regression method failed to produce the right Gamma matrix")
 
 
