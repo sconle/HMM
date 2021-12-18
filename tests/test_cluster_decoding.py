@@ -16,10 +16,9 @@ def burst_mask(minmax_burst_duration, time_steps_number, nb_tries):
     :param minmax_burst_duration: list containing min and max duration of a single burst
     :param time_steps_number: number of measures taken during duration
     :param nb_tries: number of times the fake experiment was repeated
-    :param max_amplitude: amplitude of the signal
-    :return:
+    :return: 2 dim matrix to apply to a signal to creates bursts with variation of amplitudes
     """
-    mask = np.zeros((time_steps_number, nb_tries), dtype=int)
+    mask = np.zeros((time_steps_number, nb_tries))
     for try_number in range(nb_tries):
         step = 0
         while step < time_steps_number:
@@ -46,7 +45,7 @@ def fake_signal_generation(nb_states, nb_tries, time_steps_number, time_stamps):
     """
 
     state_duration = time_steps_number // nb_states
-    frequency = np.random.randint(1, 50, nb_states)
+    frequency = np.random.randint(1, 5000, nb_states)
     amplitude = np.random.randint(1, 10, nb_states)
     X = np.zeros((time_steps_number - state_duration * nb_states, nb_tries), dtype=int)
     for state_range in range(nb_states):
@@ -56,8 +55,14 @@ def fake_signal_generation(nb_states, nb_tries, time_steps_number, time_stamps):
     return X
 
 
-def fake_gamma_generation(duration):
-    return 0
+def fake_gamma_generation(time_steps_number, nb_states):
+    state_duration = time_steps_number // nb_states
+    gamma = np.zeros((time_steps_number, nb_states), dtype=int)
+    gamma_ending = np.ones((time_steps_number - state_duration * nb_states, nb_states), dtype=int)
+    for state in range(nb_states):
+        gamma[state * state_duration: (state + 1) * state_duration, state] = 1
+    gamma = np.concatenate((gamma, gamma_ending), axis=0)
+    return gamma
 
 
 class TestClusterDecoding(unittest.TestCase):
@@ -72,9 +77,9 @@ class TestClusterDecoding(unittest.TestCase):
     """
 
     # Parameters of the fake experiment
-    nb_of_measures = 100000
+    nb_of_measures = 1000
     nb_of_tries = 2
-    min_max_burst_duration = [5, 10]
+    min_max_burst_duration = [10, 50]
     nb_states = 4
     duration = 10
 
@@ -83,22 +88,23 @@ class TestClusterDecoding(unittest.TestCase):
     fake_signal = fake_signal_generation(nb_states, nb_of_tries, nb_of_measures, T)
     mask = burst_mask(min_max_burst_duration, nb_of_measures, nb_of_tries)
     Y = (mask > 0).astype(int)
-    print(Y)
-    noise = np.random.normal(0, 1, (nb_of_measures, nb_of_tries))
-    print(noise)
+    noise = 0.9*np.random.normal(0, 1, (nb_of_measures, nb_of_tries))
     X = fake_signal * mask + noise
-    perfect_X = fake_signal * mask
-    fake_gamma = fake_gamma_generation(duration)
+    no_noise_X = fake_signal * mask
+    fake_gamma = fake_gamma_generation(nb_of_measures, nb_states)
 
     def test_gamma_value_regression(self):
         """
         Testing on fake data that the Gamma matrix returned corresponds to the fake one.
         """
-        plt.plot(self.T, self.X.T[0])
-        plt.plot(self.T, self.perfect_X.T[0])
+        print(self.fake_gamma)
+        plt.plot(self.T, self.X.T[0], label='X')
+
+        plt.plot(self.T, self.Y.T[0], label='Y')
+        plt.legend(['X', 'Y'])
         plt.show()
-        K = 5  # Number of states chosen is arbitrary
-        gamma = cluster_decoding(self.perfect_X, self.Y, self.T, K)
+        K = self.nb_states  # Number of states chosen is arbitrary
+        gamma = cluster_decoding(self.no_noise_X, self.Y, self.T, K)
         assert_array_equal(gamma, self.fake_gamma, err_msg="Regression method failed to produce the right Gamma matrix")
 
 
