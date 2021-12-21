@@ -45,7 +45,7 @@ def fake_signal_generation(nb_states, nb_tries, time_steps_number, time_stamps):
     """
 
     state_duration = time_steps_number // nb_states
-    frequency = np.random.randint(1, 5000, nb_states)
+    frequency = np.random.randint(1, 1000, nb_states)
     amplitude = np.random.randint(1, 10, nb_states)
     X = np.zeros((time_steps_number - state_duration * nb_states, nb_tries), dtype=int)
     for state_range in range(nb_states):
@@ -97,9 +97,12 @@ class TestClusterDecoding(unittest.TestCase):
         """
         Testing on fake data that the Gamma matrix returned corresponds to the fake one.
         """
-        print(self.fake_gamma)
-        plt.plot(self.T, self.X.T[0], label='X')
 
+        plt.plot(self.T, self.X.T[0], label='X')
+        plt.plot(self.T, self.Y.T[0], label='Y')
+        plt.legend(['X', 'Y'])
+        plt.show()
+        plt.plot(self.T, self.no_noise_X.T[0], label='X')
         plt.plot(self.T, self.Y.T[0], label='Y')
         plt.legend(['X', 'Y'])
         plt.show()
