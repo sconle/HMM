@@ -1,0 +1,18 @@
+##### Matlab ##### | ##### Python #####
+zeros()            | np.zeros() ( grace à numpy )
+for t = 1:n        | for t in range(0,n)
+permute()          | np.transpose()
+strcmp()           | ""=="" (compare un string)
+liste()            | liste[] (crochets au lieu de parantheses)
+reshape()          | np.reshape()
+pdist()            | np.pdist()
+iseuclidean()      | distance.is_valid()
+linkage()          | to_tree(linkage()) #A vérifier
+cluster()          | fcluster() #A vérifier
+X'                 | X.T
+                   |
+                   |
+                   |
+                   |
+                   |
+                   |
