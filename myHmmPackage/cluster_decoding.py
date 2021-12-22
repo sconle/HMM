@@ -23,10 +23,7 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
     OUTPUT
         Gamma: (trial time by K), containing the cluster assignments
     """
-    def inspect(var):
-        print(var)
-        print(np.shape(var))
-        print('yoooooo')
+
 ####### Début Initialisation #######
 
     def smooth(a, n=3) :
@@ -105,7 +102,7 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
                 Ystar = np.reshape(Y[ind,:,:],[sum(ind)*N, q])
 
                 #### a modif avec des @
-                beta[:,:,k] = (Xstar.T  @ Xstar + reg_parameter * np.eye(np.size(Xstar,2)))*(Xstar.T * Ystar)^(-1)
+                beta[:,:,k] = (np.transpose(Xstar)  @ Xstar + reg_parameter * np.eye(np.size(Xstar,2)))*(np.transpose(Xstar) * Ystar)^(-1)
 
             # E
             Y = np.reshape(Y,[ttrial*N, q])
@@ -144,7 +141,7 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
         for t in range(ttrial):
             Xt = np.transpose(X[t, :, :], (1, 2, 0))
             Yt = np.transpose(Y[t, :, :], (1, 2, 0))
-            beta[:, :, t] = (np.transpose(Xt) @ Xt) @ np.invert(np.transpose(Xt) @ Yt)
+            beta[:, :, t] = np.linalg.pinv(np.transpose(Xt) @ Xt) @ (np.transpose(Xt) @ Yt)
 
         if cluster_measure == "response":
             dist = np.zeros((ttrial * (ttrial - 1) / 2, 1))
@@ -199,18 +196,17 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
         regularization = 1.0
         assig = np.zeros((ttrial, 1))
         err = 0
-        changes = [1] + [int(i * np.round(ttrial / K)) for i in range(1, K)] + [ttrial]        
+        changes = [1] + [int(i * np.round(ttrial / K)) for i in range(1, K)] + [ttrial]
         Ystar = np.reshape(Y, [ttrial * N, q])
 
-        for k in range(1, K + 1):
-            assig[changes[k]:changes[k+1]] = k
+        for k in range(1, K + 1): #le assig[0] = 0 c'est un peu bizarre
+            assig[changes[k - 1]:changes[k]] = k
             ind = assig == k
             Xstar = np.reshape([X[i,:,:] for i in range(len(ind)) if ind[i]], [int(sum(ind) * N), p])
             Ystar = np.reshape([Y[i,:,:] for i in range(len(ind)) if ind[i]], [int(sum(ind) * N), q])
 
-            inspect(Xstar.T @ Ystar)
-            beta = (np.transpose(Xstar) @ Xstar + 0.0001 * np.eye(np.shape(Xstar)[1])) @ np.invert((Xstar.T @ Ystar))
-            err = err + np.sqrt(sum(sum((Ystar - Xstar * beta) ** 2, 2)))
+            beta = np.linalg.pinv(np.transpose(Xstar) @ Xstar + 0.0001 * np.eye(np.shape(Xstar)[1])) @ (np.transpose(Xstar) @ Ystar)
+            err = err + np.sqrt(sum(sum((Ystar - Xstar @ beta) ** 2, 2)))
 
         err_best = err
         assig_best = assig
@@ -218,18 +214,22 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
             assig = np.zeros((ttrial, 1))
             while True:
                 changes = np.cumsum(regularization + np.random.rand(1, K))
-                changes = [1, np.floor(ttrial * changes / max(changes))]
-                if ~any(changes == 0) and len(np.unique(changes)) == len(changes):
+                changes = np.concatenate((np.array([1]), np.floor(ttrial * changes / max(changes))))
+                if ~any(np.asarray(changes) == 0) and len(np.unique(changes)) == len(changes):
                     break
             err = 0
 
-            for k in range(1, k + 1):
-                assig[changes[k]:changes[k + 1]] = k
+            for k in range(1, K + 1):
+                assig[int(changes[k-1]):int(changes[k])] = k
                 ind = assig == k
+                ind = np.array(ind)
+                ind = np.transpose(ind)
+                ind = ind[0] #je ne comprends pas totalement pourquoi mais visiblement il faut transposer ind et une
+                            #fois transposé, il faut prendre le premier élément de la liste car ça devient une liste de liste
                 Xstar = np.reshape(X[ind, :, :], [sum(ind) * N, p])
                 Ystar = np.reshape(Y[ind, :, :], [sum(ind) * N, q])
-                beta = (np.transpose(Xstar) @ Xstar + 0.0001 * np.eye(np.shape(Xstar, 2))) @ np.invert((np.transpose(Xstar) @ Ystar))
-                err = err + np.sqrt(sum(sum((Ystar - Xstar * beta) ** 2, 2)))
+                beta = np.linalg.pinv(np.transpose(Xstar) @ Xstar + 0.0001 * np.eye(np.shape(Xstar)[1])) @ ((np.transpose(Xstar) @ Ystar))
+                err = err + np.sqrt(sum(sum((Ystar - Xstar @ beta) ** 2, 2)))
 
             if err < err_best:
                 err_best = err
@@ -244,23 +244,21 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
     else : #'fixedsequential'
         assig = np.ceil(K*[t/ttrial for t in range(1,ttrial)])
 
-
     Gamma = np.zeros((ttrial, K))
     for k  in range(K):
         #Gamma[assig==k,k] = 1
         Gamma[:,k] = [1 if a==k else None for a in assig]
 
-
-
     if swin > 1 :
         Gamma1 = Gamma
         Gamma = np.zeros((ttrial0-r,K))
-        for k  in range(K):
-            g = np.repmat(np.transpose(Gamma1[:,k]),[swin, 1])
-            Gamma[:,k] = g[:]
+        for k in range(K):
+            g = np.tile(np.transpose(np.tile(Gamma1[:,k],(1, 1))),(swin, 1))
+            for i in range(len(Gamma[:,k])):
+                Gamma[:,k][i] = g[:][i]
 
         if r > 0 :
             Gamma = [[Gamma],
-                     [np.repmat(Gamma[-1,:],[r, 1])]]
+                     [np.tile(Gamma[-1,:],(r, 1))]]
 
 

@@ -5,8 +5,9 @@ import xarray as xr   # Manages .nc (netCDF) files in Python.
 # Scientific computing
 import os
 import sys
-sys.path.append('C:/Users/vtruong/OneDrive - Sopra Steria/Documents/HMM/myHmmPackage')
-from cluster_decoding import *
+import numpy as np
+sys.path.append(r"D:\centrale\3A\info\HMM\myHmmPackage")
+from myHmmPackage.cluster_decoding import *
 
 
 #Le dossier "data" contenant les données doit se trouver dans le dossier mère
@@ -14,7 +15,7 @@ from cluster_decoding import *
 subj=2
 IC=1
 
-dirname = os.path.dirname(__file__)
+dirname = os.path.dirname(__file__ + "/../../")
 filename = dirname + f"/data/su{subj}IC{IC}_rawdata.nc"
 filename2 = dirname + f"/data/su{subj}IC{IC + 2}_rawdata.nc"
 
@@ -40,5 +41,5 @@ X = np.reshape(X, (ttrial*N, p))
 Y = np.reshape(Y, (ttrial*N, 1))
 T = (np.ones((N, 1)))*ttrial
 K = 3
-cluster_method='regression'
+cluster_method='sequential'
 Gamma = cluster_decoding(X, Y, T, K, cluster_method)
