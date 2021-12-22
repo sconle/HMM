@@ -247,10 +247,11 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
     Gamma = np.zeros((ttrial, K))
     for k  in range(K):
         #Gamma[assig==k,k] = 1
-        Gamma[:,k] = [1 if a==k else None for a in assig]
+        Gamma[:,k] = [1 if a==k else 0 for a in assig]
 
     if swin > 1 :
         Gamma1 = Gamma
+        print("gamma1",Gamma1)
         Gamma = np.zeros((ttrial0-r,K))
         for k in range(K):
             g = np.tile(np.transpose(np.tile(Gamma1[:,k],(1, 1))),(swin, 1))
@@ -261,4 +262,4 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
             Gamma = [[Gamma],
                      [np.tile(Gamma[-1,:],(r, 1))]]
 
-
+    return Gamma

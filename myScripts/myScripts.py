@@ -1,4 +1,5 @@
 # Storage management
+import matplotlib.pyplot as plt
 import xarray as xr   # Manages .nc (netCDF) files in Python.
                       # The states' informations are stored in a .nc file for each subject.
 
@@ -43,3 +44,7 @@ T = (np.ones((N, 1)))*ttrial
 K = 3
 cluster_method='sequential'
 Gamma = cluster_decoding(X, Y, T, K, cluster_method)
+
+print(Gamma)
+plt.imshow(Gamma, aspect='auto')
+plt.show()
