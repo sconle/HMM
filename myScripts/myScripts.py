@@ -4,9 +4,9 @@ import xarray as xr   # Manages .nc (netCDF) files in Python.
                       # The states' informations are stored in a .nc file for each subject.
 
 # Scientific computing
+import numpy as np
 import os
 import sys
-import numpy as np
 sys.path.append(r"D:\centrale\3A\info\HMM\myHmmPackage")
 from myHmmPackage.cluster_decoding import *
 
