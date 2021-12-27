@@ -12,8 +12,17 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
     """
     clustering of the time-point-by-time-point regressions, which is
     temporally constrained unlike TUDA
+
     INPUT
-        X,Y,T are as usual
+        X: Brain data, (time by regions) or (time by trials by regions) # ttrial*N*p
+        Y: Stimulus, (time by q); q is no. of stimulus features
+                      For binary classification problems, Y is (time by 1) and
+                      has values -1 or 1
+                      For multiclass classification problems, Y is (time by classes)
+                      with indicators values taking 0 or 1.
+                  If the stimulus is the same for all trials, Y can have as many
+                  rows as trials, e.g. (trials by q)
+        T: Length of series or trials
         K is the number of states
         cluster_method is 'regression', 'hierarchical', or 'sequential'
         cluster_measure is 'error', 'response' or 'beta', only used if cluster_method is 'hierarchical'
