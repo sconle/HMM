@@ -145,7 +145,7 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
 ####### Début Methode Hierarchical #######
 
     elif cluster_method == "hierarchical":
-        beta = np.zeros((p, q), ttrial)
+        beta = np.zeros((p, q, ttrial))
 
         for t in range(ttrial):
             Xt = np.transpose(X[t, :, :], (1, 2, 0))

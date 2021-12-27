@@ -94,7 +94,16 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         pass
 
     def _fit_regression(self, X, y):
-        # TODO
+        # Initialize decoding_mats_, the array containing n_cluster matrices, each decoding data for one cluster
+        if self.decoding_mats_init is None:
+            decoding_mats = np.zeros((self.n_clusters, n_time_points, n_label_features))
+            # TODO : regressions for each cluster
+            self.decoding_mats_ = decoding_mats
+        else:
+            # TODO : check if decoding_mats_init has the right dimensions
+            self.decoding_mats_ = self.decoding_mats_init
+
+        # TODO : Faire la boucle EM
         pass
 
     def _fit_hierarchical(self, X, y):
