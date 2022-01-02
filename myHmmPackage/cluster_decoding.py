@@ -205,7 +205,7 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
         regularization = 1.0
         assig = np.zeros((ttrial, 1))
         err = 0
-        changes = [1] + [int(i * np.round(ttrial / K)) for i in range(1, K)] + [ttrial]
+        changes = [0] + [int(i * np.round(ttrial / K)) - 1 for i in range(1, K)] + [ttrial - 1]
         Ystar = np.reshape(Y, [ttrial * N, q])
 
         for k in range(1, K + 1): #le assig[0] = 0 c'est un peu bizarre
@@ -223,7 +223,7 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
             assig = np.zeros((ttrial, 1))
             while True:
                 changes = np.cumsum(regularization + np.random.rand(1, K))
-                changes = np.concatenate((np.array([1]), np.floor(ttrial * changes / max(changes))))
+                changes = np.concatenate((np.array([0]), np.floor(ttrial * changes / max(changes)) - 1))
                 if ~any(np.asarray(changes) == 0) and len(np.unique(changes)) == len(changes):
                     break
             err = 0
@@ -254,13 +254,12 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
         assig = np.ceil(K*[t/ttrial for t in range(1,ttrial)])
 
     Gamma = np.zeros((ttrial, K))
-    for k  in range(K):
+    for k in range(1,K+1):
         #Gamma[assig==k,k] = 1
-        Gamma[:,k] = [1 if a==k else 0 for a in assig]
+        Gamma[:,k - 1] = [1 if a==k else 0 for a in assig]
 
     if swin > 1 :
         Gamma1 = Gamma
-        print("gamma1",Gamma1)
         Gamma = np.zeros((ttrial0-r,K))
         for k in range(K):
             g = np.tile(np.transpose(np.tile(Gamma1[:,k],(1, 1))),(swin, 1))
