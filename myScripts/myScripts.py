@@ -46,5 +46,5 @@ cluster_method='sequential'
 Gamma = cluster_decoding(X, Y, T, K, cluster_method)
 
 print(Gamma)
-plt.imshow(Gamma, aspect='auto')
+plt.imshow(Gamma ,aspect='auto')
 plt.show()
