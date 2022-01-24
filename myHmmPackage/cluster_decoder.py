@@ -122,7 +122,51 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         # TODO
         pass
 
-    def _fit_sequential(self, X, y):
+    def _fit_sequential(self, X, y, n_samples, n_time_points, n_regions, n_label_features):
+        mat_assig_states = np.zeros((n_time_points, 1))
+        mat_changes_states = [0] + [int(i * np.round(n_time_points / self.n_clusters)) - 1 for i in range(1, self.n_clusters)] + [n_time_points - 1]
+        err = 0
+
+        for states in range(1, self.n_clusters + 1):  # le mat_assig_states[0] = 0 c'est un peu bizarre
+            mat_assig_states[mat_changes_states[states - 1]:mat_changes_states[states]] = states
+            mat_is_in_states = mat_assig_states == states
+            Xstar = np.reshape([X[i, :, :] for i in range(len(mat_is_in_states)) if mat_is_in_states[i]], [int(sum(mat_is_in_states) * n_samples), n_regions])
+            ystar = np.reshape([y[i, :, :] for i in range(len(mat_is_in_states)) if mat_is_in_states[i]], [int(sum(mat_is_in_states) * n_samples), n_label_features])
+
+            decoding_mats = np.linalg.pinv(np.transpose(Xstar) @ Xstar + 0.0001 * np.eye(np.shape(Xstar)[1])) @ (np.transpose(Xstar) @ ystar)
+            err = err + np.sqrt(sum(sum((ystar - Xstar @ decoding_mats) ** 2, 2)))
+
+        err_best = err
+        mat_assig_states_best = mat_assig_states
+        decoding_mats_best = decoding_mats
+
+        for iteration in range(1, self.max_iter):
+            mat_assig_states = np.zeros((n_time_points, 1))
+            while True:
+                mat_changes_states = np.cumsum(1.0 + np.random.rand(1, self.n_clusters))
+                mat_changes_states = np.concatenate((np.array([0]), np.floor(n_time_points * mat_changes_states / max(mat_changes_states)) - 1))
+                if ~any(np.asarray(mat_changes_states) == 0) and len(np.unique(mat_changes_states)) == len(mat_changes_states):
+                    break
+            err = 0
+
+            for states in range(1, self.n_clusters + 1):
+                mat_assig_states[int(mat_changes_states[states-1]):int(mat_changes_states[states])] = states
+                mat_is_in_states = mat_assig_states == states
+                mat_is_in_states = np.transpose(np.array(mat_is_in_states))[0]
+                                                        #je ne comprends pas totalement pourquoi mais visiblement il faut transposer mat_is_in_states et une
+                                                        #fois transposé, il faut prendre le premier élément de la liste car ça devient une liste de liste
+                Xstar = np.reshape(X[mat_is_in_states, :, :], [sum(mat_is_in_states) * n_samples, n_regions])
+                ystar = np.reshape(y[mat_is_in_states, :, :], [sum(mat_is_in_states) * n_samples, n_label_features])
+                decoding_mats = np.linalg.pinv(np.transpose(Xstar) @ Xstar + 0.0001 * np.eye(np.shape(Xstar)[1])) @ ((np.transpose(Xstar) @ ystar))
+                err = err + np.sqrt(sum(sum((ystar - Xstar @ decoding_mats) ** 2, 2)))
+
+            if err < err_best:
+                err_best = err
+                mat_assig_states_best = mat_assig_states
+                decoding_mats_best = decoding_mats
+
+        mat_assig_states = mat_assig_states_best
+        self.decoding_mats_ = decoding_mats_best
         # TODO
         pass
 

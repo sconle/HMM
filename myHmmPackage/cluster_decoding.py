@@ -40,7 +40,7 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
         ret[n:] = ret[n:] - ret[:-n]
         return ret[n - 1:] / n
 
-    N = np.shape(T)[0]; p = np.shape(X)[1]; q = np.shape(Y)[1]; ttrial = int(T[0])
+    N = np.shape(T)[0]; p = np.shape(X)[1]; q = np.shape(Y)[1]; ttrial = int(T[0]) #n_time_points pour ttrial
 
     if Pstructure == None : Pstructure = np.ones((K,1), dtype=bool)
     if Pistructure == None : Pistructure = np.ones(K, dtype=bool)
@@ -215,6 +215,7 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
             Ystar = np.reshape([Y[i,:,:] for i in range(len(ind)) if ind[i]], [int(sum(ind) * N), q])
 
             beta = np.linalg.pinv(np.transpose(Xstar) @ Xstar + 0.0001 * np.eye(np.shape(Xstar)[1])) @ (np.transpose(Xstar) @ Ystar)
+            #beta -> decoding_mats_
             err = err + np.sqrt(sum(sum((Ystar - Xstar @ beta) ** 2, 2)))
 
         err_best = err
@@ -243,7 +244,6 @@ def cluster_decoding(X, Y, T, K, cluster_method='regression',\
             if err < err_best:
                 err_best = err
                 assig_best = assig
-
         assig = assig_best
 
 ####### Fin Methode Sequential #######
