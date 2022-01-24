@@ -78,8 +78,6 @@ elif test == "cluster_decoder":
     for i in range(n_time_points):
         y[i] = y_
 
-    X = np.reshape(X, (n_time_points * n_samples, n_regions))
-    y = np.reshape(y, (n_time_points * n_samples, 1))
     decoder.fit(X,y)
     plt.imshow(ClusterDecoder.gamma_, aspect='auto')
     plt.show()
