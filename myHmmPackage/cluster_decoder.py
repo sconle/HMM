@@ -28,7 +28,8 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
             decoding_mats_init=None,
             method='regression',
             measure='error',
-            max_iter=100
+            max_iter=100,
+            reg_param=10e-5,
     ):
         self.n_clusters = n_clusters  # equivalent to K= nb of states in the Matlab implementation
         self.gamma_init = gamma_init
@@ -36,6 +37,7 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         self.method = method
         self.measure = measure
         self.max_iter = max_iter
+        self.reg_param = reg_param  # le lambda de la normalisation L2 pour une régression linéaire (utile dans _fit_regression)
         # TODO : autres params tels que Pstructure et Pistructure et surtout T
 
     def fit(self, X, y):
@@ -43,9 +45,9 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         """A reference implementation of a fitting function for a classifier.
         Parameters
         ----------
-        X : array-like, shape (n_samples, n_features)
+        X : array-like, shape (n_samples, n_time_points, n_regions)
             The training input samples.
-        y : array-like, shape (n_samples,)
+        y : array-like, shape (n_samples, n_time_points, n_label_features)
             The target values. An array of int.
         Returns
         -------
@@ -53,10 +55,10 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
             Returns self.
         """
         # Check that X and y have correct shape
-        X, y = check_X_y(X, y, multi_output=True)  # See documentation if we want to have more than 2d inputs
+        # X, y = check_X_y(X, y, multi_output=True)  # See documentation if we want to have more than 2d inputs
 
-        n_samples, n_time_points = X.shape
-        _, n_label_features = y.shape
+        n_samples, n_time_points, n_regions = X.shape
+        _, _, n_label_features = y.shape
 
         # Initialize gamma_, the matrix that affects a cluster for each time point in X
         if self.gamma_init is None:
@@ -72,7 +74,7 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
 
         # Initialize decoding_mats_, the array containing n_cluster matrices, each decoding data for one cluster
         if self.decoding_mats_init is None:
-            decoding_mats = np.zeros((self.n_clusters, n_time_points, n_label_features))
+            decoding_mats = np.zeros((self.n_clusters, n_regions, n_label_features))
             # TODO : regressions for each cluster
             self.decoding_mats_ = decoding_mats
         else:
@@ -93,15 +95,25 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         # TODO : perform clustering wrt maximum likelihood, then return y, result of the decoding analysis.
         pass
 
-    def _fit_regression(self, X, y):
+    def _fit_regression(self, X, y, n_regions, n_label_features):
         # Initialize decoding_mats_, the array containing n_cluster matrices, each decoding data for one cluster
         if self.decoding_mats_init is None:
-            decoding_mats = np.zeros((self.n_clusters, n_time_points, n_label_features))
+            decoding_mats = np.zeros((self.n_clusters, n_regions, n_label_features))
             # TODO : regressions for each cluster
             self.decoding_mats_ = decoding_mats
         else:
             # TODO : check if decoding_mats_init has the right dimensions
             self.decoding_mats_ = self.decoding_mats_init
+
+        # M step
+        for cluster in self.n_clusters:
+            n_time_points_in_cluster = sum(self.gamma_[:, cluster])
+            Xstar = X[:, self.gamma_[:, cluster], :]
+            Xstar = Xstar.reshape((n_time_points_in_cluster*self.n_clusters, n_regions))
+            ystar = y[:, self.gamma_[:, cluster], :]
+            ystar = ystar.reshape((n_time_points_in_cluster * self.n_clusters, n_label_features))
+
+            self.decoding_mats_[cluster] = np.dot((np.dot(Xstar.T, Xstar) + self.reg_param*np.eye(n_regions)), np.inv(np.dot(Xstar.T, ystar)))
 
         # TODO : Faire la boucle EM
         pass
