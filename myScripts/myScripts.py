@@ -11,9 +11,9 @@ sys.path.append(r"D:\centrale\3A\info\HMM\myHmmPackage")
 from myHmmPackage.cluster_decoding import *
 from myHmmPackage.cluster_decoder import *
 
-test = "cluster_decoder"
+TEST = "cluster_decoder"
 
-if test == "cluster_decoding":
+if TEST == "cluster_decoding":
     #Le dossier "data" contenant les données doit se trouver dans le dossier mère
 
     subj=2
@@ -52,8 +52,10 @@ if test == "cluster_decoding":
     plt.imshow(Gamma.T, aspect='auto')
     plt.show()
 
-elif test == "cluster_decoder":
-    decoder = ClusterDecoder(method='sequential')
+elif TEST == "cluster_decoder":
+    decoder = ClusterDecoder(method='regression',
+                             init_scheme=np.array([0, 0, 0, 1]),
+                             transition_scheme=[[1,1,0,0],[0,1,1,0],[0,0,1,1],[1,0,0,1]])
 
     subj = 2
     IC = 1
@@ -65,18 +67,17 @@ elif test == "cluster_decoder":
     ds = xr.open_dataset(filename)
     ds2 = xr.open_dataset(filename2)
 
-    X1 = np.transpose(ds['timecourse'].values)[:, :, np.newaxis]
-    X2 = np.transpose(ds2['timecourse'].values)[:, :, np.newaxis]
+    X1 = ds['timecourse'].values[:, :, np.newaxis]
+    X2 = ds2['timecourse'].values[:, :, np.newaxis]
 
     X = np.concatenate((X1, X2), axis=2)
 
     trialinfo = ds['trialinfo']
     y_ = ((trialinfo / 10000).astype(int) == 1)
-    np.transpose(X,(1,0,2))
-    [n_samples, n_time_points, n_regions] = np.shape(X)
+    n_samples, n_time_points, n_regions = np.shape(X)
     y = np.ones((n_samples, n_time_points, 1))
     for i in range(n_time_points):
-        y[i] = y_
+        y[:, i] = y_
 
     decoder.fit(X,y)
     plt.imshow(decoder.gamma_.T, aspect='auto')
