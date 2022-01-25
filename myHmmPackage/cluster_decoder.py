@@ -219,13 +219,23 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
             print("The first two dimensions of X and y must be the same")
             return False
 
-        if self.transition_scheme is not None and self.transition_scheme.shape != (self.n_clusters, self.n_clusters):
-            print("transition_scheme's dimensions need to be: (n_clusters, n_clusters)")
-            return False
+        if self.transition_scheme is not None:
+            self.transition_scheme = np.array(self.transition_scheme).astype(int)
+            if self.transition_scheme.shape != (self.n_clusters, self.n_clusters):
+                print("transition_scheme's dimensions need to be: (n_clusters, n_clusters)")
+                return False
 
-        if self.gamma_init is not None and self.gamma_init.shape != (X.shape[1], self.n_clusters):
-            print("gamma_init's dimensions need to be: (n_time_points, n_clusters)")
-            return False
+        if self.init_scheme is not None:
+            self.init_scheme = np.array(self.init_scheme).astype(int)
+            if self.init_scheme.shape != self.n_clusters:
+                print("init_scheme's dimensions need to be: (n_clusters,)")
+                return False
+
+        if self.gamma_init is not None:
+            self.gamma_init = np.array(self.gamma_init).astype(int)
+            if self.gamma_init.shape != (X.shape[1], self.n_clusters):
+                print("gamma_init's dimensions need to be: (n_time_points, n_clusters)")
+                return False
 
         if self.decoding_mats_init is not None and self.decoding_mats_init.shape != (self.n_clusters, X.shape[2], y.shape[2]):
             print("decoding_mats_init's dimensions need to be: (n_samples, n_time_points, n_label_features)")

@@ -76,9 +76,7 @@ elif TEST == "cluster_decoder":
 
     trialinfo = ds['trialinfo']
     y_ = ((trialinfo / 10000).astype(int) == 1)
-    X = np.transpose(X,(1,0,2))
     [n_samples, n_time_points, n_regions] = np.shape(X)
-    X = np.reshape(X, (n_time_points * n_samples, n_regions))
     y = np.ones((n_samples, n_time_points, 1))
     for i in range(n_time_points):
         y[:,i] = y_
