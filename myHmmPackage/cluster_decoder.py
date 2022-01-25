@@ -30,6 +30,8 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
             measure='error',
             max_iter=100,
             reg_param=10e-5,
+            transition_scheme=None,
+            init_scheme=None,
     ):
         self.n_clusters = n_clusters  # equivalent to K= nb of states in the Matlab implementation
         self.gamma_init = gamma_init
@@ -38,7 +40,8 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         self.measure = measure
         self.max_iter = max_iter
         self.reg_param = reg_param  # le lambda de la normalisation L2 pour une régression linéaire (utile dans _fit_regression)
-        # TODO : autres params tels que Pstructure et Pistructure et surtout T
+        self.transition_scheme = transition_scheme
+        self.init_scheme = init_scheme
 
     def fit(self, X, y):
 
@@ -69,21 +72,11 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
             gamma[self.n_clusters:, self.n_clusters-1] += 1
             self.gamma_ = gamma
         else:
-            # TODO : check if gamma_init has the right dimensions
             self.gamma_ = self.gamma_init
-
-        # Initialize decoding_mats_, the array containing n_cluster matrices, each decoding data for one cluster
-        if self.decoding_mats_init is None:
-            decoding_mats = np.zeros((self.n_clusters, n_regions, n_label_features))
-            # TODO : regressions for each cluster
-            self.decoding_mats_ = decoding_mats
-        else:
-            # TODO : check if decoding_mats_init has the right dimensions
-            self.decoding_mats_ = self.decoding_mats_init
 
         # Perform clustering and decoding
         if self.method == 'regression':
-            self._fit_regression(X, y)
+            self._fit_regression(X, y, n_samples, n_time_points, n_regions, n_label_features)
         elif self.method == 'hierarchical':
             self._fit_hierarchical(X, y)
         elif self.method == 'sequential':
@@ -95,28 +88,55 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         # TODO : perform clustering wrt maximum likelihood, then return y, result of the decoding analysis.
         pass
 
-    def _fit_regression(self, X, y, n_regions, n_label_features):
+    def _fit_regression(self, X, y, n_samples, n_time_points, n_regions, n_label_features):
         # Initialize decoding_mats_, the array containing n_cluster matrices, each decoding data for one cluster
         if self.decoding_mats_init is None:
             decoding_mats = np.zeros((self.n_clusters, n_regions, n_label_features))
-            # TODO : regressions for each cluster
+            for cluster in range(self.n_clusters):
+                n_time_points_in_cluster = sum(self.gamma_[:, cluster].astype(int))
+                print(n_time_points_in_cluster)
+                # TODO faire une boucle
+                # X_star = np.empty((n_samples, n_time_points_in_cluster, n_regions))
+                X_star = X[:, self.gamma_[:, cluster].astype(int)==1, :]
+                X_star = X_star.reshape((n_time_points_in_cluster * self.n_clusters, n_regions))
+                y_star = y[:, self.gamma_[:, cluster].astype(int)==1, :]
+                y_star = y_star.reshape((n_time_points_in_cluster * self.n_clusters, n_label_features))
+
+                decoding_mats[cluster] = np.dot((np.dot(X_star.T, X_star) + self.reg_param * np.eye(n_regions)),
+                                                      np.inv(np.dot(X_star.T, y_star)))
             self.decoding_mats_ = decoding_mats
         else:
-            # TODO : check if decoding_mats_init has the right dimensions
             self.decoding_mats_ = self.decoding_mats_init
 
-        # M step
-        for cluster in self.n_clusters:
-            n_time_points_in_cluster = sum(self.gamma_[:, cluster])
-            Xstar = X[:, self.gamma_[:, cluster], :]
-            Xstar = Xstar.reshape((n_time_points_in_cluster*self.n_clusters, n_regions))
-            ystar = y[:, self.gamma_[:, cluster], :]
-            ystar = ystar.reshape((n_time_points_in_cluster * self.n_clusters, n_label_features))
+        for _ in range(self.max_iter):
+            # M step
+            for cluster in self.n_clusters:
+                n_time_points_in_cluster = sum(self.gamma_[:, cluster].astype(int))
+                print(n_time_points_in_cluster)
+                X_star = X[:, self.gamma_[:, cluster].astype(int)==1, :]
+                X_star = X_star.reshape((n_time_points_in_cluster*self.n_clusters, n_regions))
+                y_star = y[:, self.gamma_[:, cluster].astype(int)==1, :]
+                y_star = y_star.reshape((n_time_points_in_cluster * self.n_clusters, n_label_features))
 
-            self.decoding_mats_[cluster] = np.dot((np.dot(Xstar.T, Xstar) + self.reg_param*np.eye(n_regions)), np.inv(np.dot(Xstar.T, ystar)))
+                self.decoding_mats_[cluster] = np.dot((np.dot(X_star.T, X_star) + self.reg_param*np.eye(n_regions)), np.inv(np.dot(X_star.T, y_star)))
 
-        # TODO : Faire la boucle EM
-        pass
+            # E step
+            err = np.zeros((n_time_points, self.n_clusters))
+            for cluster in range(self.n_clusters):
+                err[:, cluster] = np.linalg.norm((y - np.dot(X, self.decoding_mats_[cluster])), axis=1)
+            gamma = np.zeros((n_time_points, self.n_clusters))
+            if self.init_scheme is not None:
+                err[0, self.init_scheme==0] = np.inf
+            state = np.argmin(err[0])
+            gamma[0, state] = 1
+            for t in range(1, n_time_points):
+                if self.transition_scheme is not None:
+                    err[t, self.transition_scheme[state] == 0] = np.inf
+                state = np.argmin(err[t])
+                gamma[t, state] = 1
+            if gamma == self.gamma_:
+                break
+            self.gamma_ = gamma
 
     def _fit_hierarchical(self, X, y):
         # TODO
@@ -166,4 +186,18 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
 
     def _fit_fixed_sequential(self, X, y):
         # TODO
+        pass
+
+    def __check(self):
+        # TODO check if dimensions and values of parameters are correct
+        """
+        dimensions X and y == (n_samples, n_time_points, n_regions) and (n_samples, n_time_points, n_label_features)
+        dimensions (and values) transition_scheme == (self.n_clusters, self.n_clusters)
+        dimensions gamma_init == (n_time_points, self.n_clusters)
+        dimensions decoding_mats_init == (self.n_clusters, n_regions, n_label_features)
+        :return: None
+        """
+
+        # X, y = check_X_y(X, y, multi_output=True)  # See documentation if we want to have more than 2d inputs
+        
         pass
