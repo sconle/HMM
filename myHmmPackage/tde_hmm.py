@@ -33,7 +33,7 @@ class TDE_HMM(GaussianHMM):
 
     def __init__(
             self,
-            n_components=1, covariance_type='diag',
+            n_components=3, covariance_type='full',
             min_covar=1e-3,
             startprob_prior=1.0, transmat_prior=1.0,
             means_prior=0, means_weight=0,
@@ -41,6 +41,7 @@ class TDE_HMM(GaussianHMM):
             algorithm="viterbi", random_state=None,
             n_iter=10, tol=1e-2, verbose=False,
             params="stmc", init_params="stmc",
+            n_fenetre=10,
             implementation="log"
     ):
         """
@@ -107,6 +108,28 @@ class TDE_HMM(GaussianHMM):
                          n_iter=n_iter, tol=tol, verbose=verbose,
                          params=params, init_params=init_params)
 
-    def fit(self, X, lengths=None):
+    def fit(self, X):
+        X = self.__signal_crante(X)
         super().fit(X)
         return self
+
+    def predict_proba(self, X):
+        X = self.__signal_crante(X)
+        return super().predict_proba(X)
+
+    def __signal_crante(self, X, n_fenetre=10):
+        # On récupère un signal
+        X = X[:, :, 0]
+
+        # On concatène pour obtenir qu'un seul array
+        X = np.reshape(X, X.shape[0] * X.shape[1])
+        X = np.reshape(X, -1)
+
+        # On découpe le signal en plusieurs sous signaux décalés d'un cran
+        n = len(X)
+        signal_crante = np.ones((n - n_fenetre, n_fenetre))
+
+        for i in range(n - n_fenetre):
+            signal_crante[i] = X[i:i + n_fenetre]
+
+        return signal_crante

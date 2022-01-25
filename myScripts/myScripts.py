@@ -11,9 +11,34 @@ sys.path.append(r"D:\centrale\3A\info\HMM\myHmmPackage")
 from myHmmPackage.cluster_decoding import *
 from myHmmPackage.cluster_decoder import *
 from sklearn.utils.estimator_checks import check_estimator
+from myHmmPackage.tde_hmm import *
 
 
-TEST = "cluster_decoder"
+#Le dossier "data" contenant les données doit se trouver dans le dossier mère
+
+subj=2
+IC=1
+
+dirname = os.path.dirname(__file__ + "/../../")
+filename = dirname + f"/data/su{subj}IC{IC}_rawdata.nc"
+filename2 = dirname + f"/data/su{subj}IC{IC + 2}_rawdata.nc"
+ds = xr.open_dataset(filename)
+ds2 = xr.open_dataset(filename2)
+X1 = np.transpose(ds['timecourse'].values)[:,:,np.newaxis]
+X2 = np.transpose(ds2['timecourse'].values)[:,:,np.newaxis]
+
+X = np.concatenate((X1, X2), axis=2)
+
+# trialinfo = ds['trialinfo']
+# y = ((trialinfo/10000).astype(int) == 1)
+# [ttrial, N, p] = np.shape(X)
+# Y = np.ones((ttrial, N, 1))
+# for i in range(ttrial):
+#     Y[i]=y
+#
+# X = np.reshape(X, (ttrial*N, p))
+
+TEST = "tde_hmm"
 
 if TEST == "cluster_decoding":
     #Le dossier "data" contenant les données doit se trouver dans le dossier mère
@@ -83,3 +108,12 @@ elif TEST == "cluster_decoder":
     print(1 in decoder.predict(X))
     plt.imshow(decoder.gamma_.T, aspect='auto')
     plt.show()
+
+elif TEST == "tde_hmm":
+
+    hmm = TDE_HMM()
+    hmm.fit(X)
+    print(hmm.predict_proba(X))
+
+    print('FIN')
+
