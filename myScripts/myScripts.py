@@ -79,5 +79,5 @@ elif test == "cluster_decoder":
         y[i] = y_
 
     decoder.fit(X,y)
-    plt.imshow(ClusterDecoder.gamma_, aspect='auto')
+    plt.imshow(decoder.gamma_.T, aspect='auto')
     plt.show()
