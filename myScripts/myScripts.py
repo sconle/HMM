@@ -38,7 +38,7 @@ X = np.concatenate((X1, X2), axis=2)
 #
 # X = np.reshape(X, (ttrial*N, p))
 
-TEST = "cluster_decoder"
+TEST = "tde_hmm"
 
 if TEST == "cluster_decoding":
     #Le dossier "data" contenant les données doit se trouver dans le dossier mère
@@ -111,31 +111,10 @@ elif TEST == "cluster_decoder":
     plt.show()
 
 elif TEST == "tde_hmm":
-    # On récupère un signal
-    X = X[:, :, 0]
 
-    # On concatène pour obtenir qu'un seul array
-    X = np.reshape(X, X.shape[0] * X.shape[1])
-    X = np.reshape(X, -1)
-
-    # On découpe le signal en plusieurs sous signaux décalés d'un cran
-    n_fenetre = 10
-    n = len(X)
-    downsamp_rate = 3
-    signal_crante = np.ones((n-n_fenetre, n_fenetre))
-
-    for i in range(n-n_fenetre):
-        signal_crante[i] = X[i:i+n_fenetre]
-
-    # signal_crante = np.reshape(signal_crante, (-1, 1))
-
-    n_states = 3
-    n_iter = 1000000
-    covariance_type = 'full'
-    tol = 0.01
-    hmm = TDE_HMM(n_components=n_states, n_iter=n_iter, covariance_type=covariance_type, tol=tol)
-    hmm.fit(signal_crante)
-    print(hmm.predict_proba(signal_crante))
+    hmm = TDE_HMM()
+    hmm.fit(X)
+    print(hmm.predict_proba(X))
 
     print('FIN')
 
