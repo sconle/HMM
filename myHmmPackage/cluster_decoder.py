@@ -95,8 +95,10 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         pass
 
     def _fit_regression(self, X, y, n_samples, n_time_points, n_regions, n_label_features):
-        self.transition_scheme = np.array(self.transition_scheme).astype(int)
-        self.init_scheme = np.array(self.init_scheme).astype(int)
+        if self.transition_scheme is not None:
+            self.transition_scheme = np.array(self.transition_scheme).astype(int)
+        if self.init_scheme is not None:
+            self.init_scheme = np.array(self.init_scheme).astype(int)
 
         # Initialize decoding_mats_, the array containing n_cluster matrices, each decoding data for one cluster
         if self.decoding_mats_init is None:
