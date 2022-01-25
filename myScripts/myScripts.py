@@ -10,6 +10,8 @@ import sys
 sys.path.append(r"D:\centrale\3A\info\HMM\myHmmPackage")
 from myHmmPackage.cluster_decoding import *
 from myHmmPackage.cluster_decoder import *
+from sklearn.utils.estimator_checks import check_estimator
+
 
 TEST = "cluster_decoder"
 
@@ -74,10 +76,12 @@ elif TEST == "cluster_decoder":
 
     trialinfo = ds['trialinfo']
     y_ = ((trialinfo / 10000).astype(int) == 1)
-    n_samples, n_time_points, n_regions = np.shape(X)
+    X = np.transpose(X,(1,0,2))
+    [n_samples, n_time_points, n_regions] = np.shape(X)
+    X = np.reshape(X, (n_time_points * n_samples, n_regions))
     y = np.ones((n_samples, n_time_points, 1))
     for i in range(n_time_points):
-        y[:, i] = y_
+        y[:,i] = y_
 
     decoder.fit(X,y)
     plt.imshow(decoder.gamma_.T, aspect='auto')

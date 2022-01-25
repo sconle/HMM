@@ -63,6 +63,9 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         # Check that X and y have correct shape
         # X, y = check_X_y(X, y, multi_output=True)  # See documentation if we want to have more than 2d inputs
 
+        if not self.__check(X,y):
+            return
+
         n_samples, n_time_points, n_regions = X.shape
         _, _, n_label_features = y.shape
 
@@ -184,14 +187,12 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
 
         self.gamma_ = gamma_best
         self.decoding_mats_ = decoding_mats_best
-        # TODO
-        pass
 
     def _fit_fixed_sequential(self, X, y):
         # TODO
         pass
 
-    def __check(self):
+    def __check(self, X, y):
         # TODO check if dimensions and values of parameters are correct
         """
         dimensions X and y == (n_samples, n_time_points, n_regions) and (n_samples, n_time_points, n_label_features)
@@ -201,6 +202,28 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         :return: None
         """
 
-        # X, y = check_X_y(X, y, multi_output=True)  # See documentation if we want to have more than 2d inputs
-        
-        pass
+        if len(X.shape) != 3:
+            print("X need to be in 3 dimensions (n_samples, n_time_points, n_regions)")
+            return False
+
+        if len(y.shape) != 3:
+            print("y need to be in 3 dimensions (n_samples, n_time_points, n_label_features)")
+            return False
+
+        if X.shape[0] != y.shape[0] or X.shape[1] != y.shape[1]:
+            print("The first two dimensions of X and y must be the same")
+            return False
+
+        if self.transition_scheme is not None and self.transition_scheme.shape != (self.n_clusters, self.n_clusters):
+            print("transition_scheme's dimensions need to be: (n_clusters, n_clusters)")
+            return False
+
+        if self.gamma_init is not None and self.gamma_init.shape != (X.shape[1], self.n_clusters):
+            print("gamma_init's dimensions need to be: (n_time_points, n_clusters)")
+            return False
+
+        if self.decoding_mats_init is not None and self.decoding_mats_init.shape != (self.n_clusters, X.shape[2], y.shape[2]):
+            print("decoding_mats_init's dimensions need to be: (n_samples, n_time_points, n_label_features)")
+            return False
+
+        return True
