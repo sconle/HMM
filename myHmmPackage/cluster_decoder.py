@@ -91,8 +91,24 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         return self
 
     def predict(self, X):
-        # TODO : perform clustering wrt maximum likelihood, then return y, result of the decoding analysis.
-        pass
+        # y_predict = np.zeros((X.shape[0],X.shape[1],self.decoding_mats_.shape[2]))
+        # for t in range(10): #X.shape[1]):
+        #     state = self.gamma_[t,:].tolist().index(1)
+        #     y_predict[:,t,:] = X[:,t,:] @ self.decoding_mats_[state,:, :]
+        #     y_predict = np.round(y_predict,0).astype(int)
+        # return y_predict
+
+        # !!!il y a littéralement AUCUN 1 dans y_predict!!!
+        y_predict_states = np.zeros((self.n_clusters, X.shape[0], X.shape[1], self.decoding_mats_.shape[2]))
+        for state in range(self.n_clusters):
+            y_predict_states[state, :, :, :] = np.round(X @ self.decoding_mats_[state, :, :], 0).astype(int)
+        y_predict = np.zeros((X.shape[0], X.shape[1], self.decoding_mats_.shape[2]))
+        for t in range(X.shape[1]):
+            if t != X.shape[1] - 1:
+                state = self.gamma_[t,:].tolist().index(1)
+            y_predict[:, t, :] = y_predict_states[state, :, t, :]
+        return y_predict
+
 
     def _fit_regression(self, X, y, n_samples, n_time_points, n_regions, n_label_features):
         self.transition_scheme = np.array(self.transition_scheme).astype(int)
@@ -155,13 +171,14 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         gamma = np.zeros((n_time_points,self.n_clusters))
         states_temp_delimitation = [0] + [int(i * np.round(n_time_points / self.n_clusters)) - 1 for i in range(1, self.n_clusters)] + [n_time_points - 1]
         err = 0
+        decoding_mats = np.zeros((self.n_clusters, n_regions, n_label_features))
 
-        for states in range(1, self.n_clusters + 1):  # le mat_assig_states[0] = 0 c'est un peu bizarre
-            gamma[states_temp_delimitation[states - 1]:states_temp_delimitation[states], states - 1] = 1
-            Xstar = np.reshape([X[:, i, :] for i in range(len(gamma[:, states-1])) if gamma[i, states-1]], [int(sum(gamma[:, states-1]) * n_samples), n_regions])
-            ystar = np.reshape([y[:, i, :] for i in range(len(gamma[:, states-1])) if gamma[i, states-1]], [int(sum(gamma[:, states-1]) * n_samples), n_label_features])
-            decoding_mats = np.linalg.pinv(np.transpose(Xstar) @ Xstar + 0.0001 * np.eye(np.shape(Xstar)[1])) @ (np.transpose(Xstar) @ ystar)
-            err = err + np.sqrt(sum(sum((ystar - Xstar @ decoding_mats) ** 2, 2)))
+        for states in range(self.n_clusters):  # le mat_assig_states[0] = 0 c'est un peu bizarre
+            gamma[states_temp_delimitation[states]:states_temp_delimitation[states +1 ], states] = 1
+            Xstar = np.reshape([X[:, i, :] for i in range(len(gamma[:, states])) if gamma[i, states]], [int(sum(gamma[:, states]) * n_samples), n_regions])
+            ystar = np.reshape([y[:, i, :] for i in range(len(gamma[:, states])) if gamma[i, states]], [int(sum(gamma[:, states]) * n_samples), n_label_features])
+            decoding_mats[states,:,:] = np.linalg.pinv(np.transpose(Xstar) @ Xstar + 0.0001 * np.eye(np.shape(Xstar)[1])) @ (np.transpose(Xstar) @ ystar)
+            err = err + np.sqrt(sum(sum((ystar - Xstar @ decoding_mats[states,:,:]) ** 2, 2)))
 
         err_best = err
         gamma_best = gamma
@@ -176,12 +193,12 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
                     break
             err = 0
 
-            for states in range(1, self.n_clusters + 1):
-                gamma[int(states_temp_delimitation[states-1]):int(states_temp_delimitation[states]), states - 1] = 1
-                Xstar = np.reshape(X[:, gamma[:, states-1] == 1, :], [sum(gamma[:, states-1]) * n_samples, n_regions])
-                ystar = np.reshape(y[:, gamma[:, states-1] == 1, :], [sum(gamma[:, states-1]) * n_samples, n_label_features])
-                decoding_mats = np.linalg.pinv(np.transpose(Xstar) @ Xstar + 0.0001 * np.eye(np.shape(Xstar)[1])) @ ((np.transpose(Xstar) @ ystar))
-                err = err + np.sqrt(sum(sum((ystar - Xstar @ decoding_mats) ** 2, 2)))
+            for states in range(self.n_clusters):
+                gamma[int(states_temp_delimitation[states]):int(states_temp_delimitation[states + 1]), states] = 1
+                Xstar = np.reshape(X[:, gamma[:, states] == 1, :], [sum(gamma[:, states]) * n_samples, n_regions])
+                ystar = np.reshape(y[:, gamma[:, states] == 1, :], [sum(gamma[:, states]) * n_samples, n_label_features])
+                decoding_mats[states,:,:] = np.linalg.pinv(np.transpose(Xstar) @ Xstar + 0.0001 * np.eye(np.shape(Xstar)[1])) @ ((np.transpose(Xstar) @ ystar))
+                err = err + np.sqrt(sum(sum((ystar - Xstar @ decoding_mats[states,:,:]) ** 2, 2)))
 
             if err < err_best:
                 err_best = err

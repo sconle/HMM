@@ -55,9 +55,7 @@ if TEST == "cluster_decoding":
     plt.show()
 
 elif TEST == "cluster_decoder":
-    decoder = ClusterDecoder(method='regression',
-                             init_scheme=np.array([0, 0, 0, 1]),
-                             transition_scheme=[[1,1,0,0],[0,1,1,0],[0,0,1,1],[1,0,0,1]])
+    decoder = ClusterDecoder(max_iter=10, method='sequential')
 
     subj = 2
     IC = 1
@@ -76,13 +74,12 @@ elif TEST == "cluster_decoder":
 
     trialinfo = ds['trialinfo']
     y_ = ((trialinfo / 10000).astype(int) == 1)
-    X = np.transpose(X,(1,0,2))
     [n_samples, n_time_points, n_regions] = np.shape(X)
-    X = np.reshape(X, (n_time_points * n_samples, n_regions))
     y = np.ones((n_samples, n_time_points, 1))
     for i in range(n_time_points):
         y[:,i] = y_
 
     decoder.fit(X,y)
+    print(1 in decoder.predict(X))
     plt.imshow(decoder.gamma_.T, aspect='auto')
     plt.show()
