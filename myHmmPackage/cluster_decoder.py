@@ -43,8 +43,8 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         self.measure = measure
         self.max_iter = max_iter
         self.reg_param = reg_param  # le lambda de la normalisation L2 pour une régression linéaire (utile dans _fit_regression)
-        self.transition_scheme = np.array(transition_scheme).astype(int)
-        self.init_scheme = np.array(init_scheme).astype(int)
+        self.transition_scheme = transition_scheme
+        self.init_scheme = init_scheme
 
     def fit(self, X, y):
 
@@ -63,7 +63,7 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         # Check that X and y have correct shape
         # X, y = check_X_y(X, y, multi_output=True)  # See documentation if we want to have more than 2d inputs
 
-        if not self.__check(X,y):
+        if not self.__check(X, y):
             return
 
         n_samples, n_time_points, n_regions = X.shape
@@ -95,15 +95,18 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         pass
 
     def _fit_regression(self, X, y, n_samples, n_time_points, n_regions, n_label_features):
+        self.transition_scheme = np.array(self.transition_scheme).astype(int)
+        self.init_scheme = np.array(self.init_scheme).astype(int)
+
         # Initialize decoding_mats_, the array containing n_cluster matrices, each decoding data for one cluster
         if self.decoding_mats_init is None:
             decoding_mats = np.zeros((self.n_clusters, n_regions, n_label_features))
             for cluster in range(self.n_clusters):
                 n_time_points_in_cluster = sum(self.gamma_[:, cluster].astype(int))
-                X_star0 = X[:, self.gamma_[:, cluster].astype(int) == 1, :]
-                y_star0 = y[:, self.gamma_[:, cluster].astype(int) == 1, :]
-                X_star = X_star0.reshape((n_time_points_in_cluster * n_samples, n_regions))
-                y_star = y_star0.reshape((n_time_points_in_cluster * n_samples, n_label_features))
+                X_star = X[:, self.gamma_[:, cluster].astype(int) == 1, :]
+                y_star = y[:, self.gamma_[:, cluster].astype(int) == 1, :]
+                X_star = X_star.reshape((n_time_points_in_cluster * n_samples, n_regions))
+                y_star = y_star.reshape((n_time_points_in_cluster * n_samples, n_label_features))
 
                 decoding_mats[cluster] = np.dot(np.linalg.inv(np.dot(X_star.T, X_star)
                                                 + self.reg_param * np.eye(n_regions)),
@@ -116,8 +119,8 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
             # M step
             for cluster in range(self.n_clusters):
                 n_time_points_in_cluster = sum(self.gamma_[:, cluster].astype(int))
-                X_star = X[:, self.gamma_[:, cluster].astype(int)==1, :]
-                y_star = y[:, self.gamma_[:, cluster].astype(int)==1, :]
+                X_star = X[:, self.gamma_[:, cluster].astype(int) == 1, :]
+                y_star = y[:, self.gamma_[:, cluster].astype(int) == 1, :]
                 X_star = X_star.reshape((n_time_points_in_cluster * n_samples, n_regions))
                 y_star = y_star.reshape((n_time_points_in_cluster * n_samples, n_label_features))
 
