@@ -29,16 +29,7 @@ X2 = np.transpose(ds2['timecourse'].values)[:,:,np.newaxis]
 
 X = np.concatenate((X1, X2), axis=2)
 
-# trialinfo = ds['trialinfo']
-# y = ((trialinfo/10000).astype(int) == 1)
-# [ttrial, N, p] = np.shape(X)
-# Y = np.ones((ttrial, N, 1))
-# for i in range(ttrial):
-#     Y[i]=y
-#
-# X = np.reshape(X, (ttrial*N, p))
-
-TEST = "tde_hmm"
+TEST = "cluster_decoder"
 
 if TEST == "cluster_decoding":
     #Le dossier "data" contenant les données doit se trouver dans le dossier mère
@@ -80,17 +71,10 @@ if TEST == "cluster_decoding":
     plt.show()
 
 elif TEST == "cluster_decoder":
-    decoder = ClusterDecoder(max_iter=10, method='sequential')
-
-    subj = 2
-    IC = 1
-
-    dirname = os.path.dirname(__file__ + "/../../")
-    filename = dirname + f"/data/su{subj}IC{IC}_rawdata.nc"
-    filename2 = dirname + f"/data/su{subj}IC{IC + 2}_rawdata.nc"
-
-    ds = xr.open_dataset(filename)
-    ds2 = xr.open_dataset(filename2)
+    decoder = ClusterDecoder(method='regression',
+                             max_iter=10,
+                             init_scheme=np.array([0, 0, 0, 1]),
+                             transition_scheme=[[1,1,0,0],[0,1,1,0],[0,0,1,1],[1,0,0,1]])
 
     X1 = ds['timecourse'].values[:, :, np.newaxis]
     X2 = ds2['timecourse'].values[:, :, np.newaxis]
@@ -105,7 +89,6 @@ elif TEST == "cluster_decoder":
         y[:,i] = y_
 
     decoder.fit(X,y)
-    print(1 in decoder.predict(X))
     plt.imshow(decoder.gamma_.T, aspect='auto')
     plt.show()
 
