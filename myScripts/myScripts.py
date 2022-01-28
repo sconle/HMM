@@ -30,6 +30,7 @@ X2 = np.transpose(ds2['timecourse'].values)[:,:,np.newaxis]
 X = np.concatenate((X1, X2), axis=2)
 
 TEST = "cluster_decoder"
+TEST_DATA = "generated"  # "real"
 
 if TEST == "cluster_decoding":
     #Le dossier "data" contenant les données doit se trouver dans le dossier mère
@@ -87,6 +88,20 @@ elif TEST == "cluster_decoder":
     y = np.ones((n_samples, n_time_points, 1))
     for i in range(n_time_points):
         y[:,i] = y_
+
+    if TEST_DATA == "generated":
+        X = np.array([np.random.normal(loc=[10, 30], scale=[1, 1.5], size=(1000, 2)) for _ in range(100)])
+        y = (np.random.randint(10, size=100) == 0).astype(int)
+        state = 0
+        for i in range(y.shape[0]):
+            if y[i] == 1 and state == 0:
+                state = 1
+            if y[i] == 1 and state == 1:
+                state = 0
+            if state == 1:
+                y[i] = 1
+
+
 
     decoder.fit(X,y)
     plt.imshow(decoder.gamma_.T, aspect='auto')
