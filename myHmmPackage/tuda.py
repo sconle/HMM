@@ -6,9 +6,13 @@ class TUDA(hmm.HMM):
         super().__init__()
 
     def fit(self, X, y):
+        raise NotImplementedError
 
     def predict(self, X):
+        raise NotImplementedError
 
     def score(self, X, y):
+        raise NotImplementedError
 
     def set_params(self, params):
+        raise NotImplementedError

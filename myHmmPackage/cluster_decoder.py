@@ -47,7 +47,6 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         self.init_scheme = init_scheme
 
     def fit(self, X, y):
-
         """A reference implementation of a fitting function for a classifier.
         Parameters
         ----------
@@ -167,7 +166,7 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
 
     def _fit_hierarchical(self, X, y):
         # TODO
-        pass
+        raise NotImplementedError
 
     def _fit_sequential(self, X, y, n_samples, n_time_points, n_regions, n_label_features):
         gamma = np.zeros((n_time_points,self.n_clusters))
@@ -212,7 +211,7 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
 
     def _fit_fixed_sequential(self, X, y):
         # TODO
-        pass
+        raise NotImplementedError
 
     def __check(self, X, y):
         # TODO check if dimensions and values of parameters are correct
