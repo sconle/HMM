@@ -6,3 +6,6 @@ venv38
 *.m
 .ipynb_checkpoints
 .pytest_cache
+.venv/
+__pycache__
+.__pycache__/*
