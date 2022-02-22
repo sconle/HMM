@@ -68,7 +68,6 @@
   <h1>Source code for myHmmPackage.cluster_decoder</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">RegressorMixin</span>
-<span class="kn">from</span> <span class="nn">sklearn.utils.validation</span> <span class="kn">import</span> <span class="n">check_X_y</span><span class="p">,</span> <span class="n">check_array</span><span class="p">,</span> <span class="n">check_is_fitted</span>
 
 <div class="viewcode-block" id="ClusterDecoder"><a class="viewcode-back" href="../../cluster_decoder.html#myHmmPackage.cluster_decoder.ClusterDecoder">[docs]</a><span class="k">class</span> <span class="nc">ClusterDecoder</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">RegressorMixin</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -95,8 +94,8 @@
             <span class="n">decoding_mats_init</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">method</span><span class="o">=</span><span class="s1">&#39;regression&#39;</span><span class="p">,</span>
             <span class="n">measure</span><span class="o">=</span><span class="s1">&#39;error&#39;</span><span class="p">,</span>
-            <span class="n">max_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-            <span class="n">reg_param</span><span class="o">=</span><span class="mf">10e-5</span><span class="p">,</span>
+            <span class="n">max_iter</span><span class="o">=</span><span class="mf">1e2</span><span class="p">,</span>
+            <span class="n">reg_param</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span>
             <span class="n">transition_scheme</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">init_scheme</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
@@ -105,7 +104,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">decoding_mats_init</span> <span class="o">=</span> <span class="n">decoding_mats_init</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">measure</span> <span class="o">=</span> <span class="n">measure</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span> <span class="o">=</span> <span class="n">max_iter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_iter</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">reg_param</span> <span class="o">=</span> <span class="n">reg_param</span>  <span class="c1"># le lambda de la normalisation L2 pour une régression linéaire (utile dans _fit_regression)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">transition_scheme</span> <span class="o">=</span> <span class="n">transition_scheme</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">init_scheme</span> <span class="o">=</span> <span class="n">init_scheme</span>
