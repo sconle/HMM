@@ -20,8 +20,8 @@ def block_C(X ,y , decoding_mats_, n_clusters, max_iter):
         somme_M = 0
         for cluster in range(n_clusters):
             somme_M += (gamma_stk[cluster,0])
-        Xk =
-        Yk =
+        # Xk =
+        # Yk =
 
 
 
