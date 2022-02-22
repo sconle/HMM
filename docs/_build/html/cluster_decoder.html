@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>&lt;no title&gt; &#8212; neuroHMM  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <dl class="py class">
+<dt id="myHmmPackage.cluster_decoder.ClusterDecoder">
+<em class="property">class </em><code class="sig-prename descclassname">myHmmPackage.cluster_decoder.</code><code class="sig-name descname">ClusterDecoder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n_clusters</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">gamma_init</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">decoding_mats_init</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'regression'</span></em>, <em class="sig-param"><span class="n">measure</span><span class="o">=</span><span class="default_value">'error'</span></em>, <em class="sig-param"><span class="n">max_iter</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">reg_param</span><span class="o">=</span><span class="default_value">0.0001</span></em>, <em class="sig-param"><span class="n">transition_scheme</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">init_scheme</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/myHmmPackage/cluster_decoder.html#ClusterDecoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#myHmmPackage.cluster_decoder.ClusterDecoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>ClusterDecoder is an Estimator that performs supervised decoding with a predefined number of decoding matrices.
+A clustering method is used to choose which decoding matrix to use for each sample of each input data.
+The metaparameters are gamma_(ndarray, shape (n_time_points, n_clusters)) and
+decoding_mats_(ndarray, shape (n_clusters, n_time_points, n_label_features))</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n_clusters</strong> (<em>int</em>) – number of desired clusters (default= 4)</p></li>
+<li><p><strong>gamma_init</strong> (<em>ndarray</em>) – shape=(n_time_points, n_clusters) or None, (default=None)</p></li>
+<li><p><strong>decoding_mats_init</strong> (<em>ndarray</em>) – shape=(n_clusters, n_time_points, n_label_features) or None, (default=None)</p></li>
+<li><p><strong>method</strong> (<em>str</em>) – name of the method used (default=’regression’)</p></li>
+<li><p><strong>measure</strong> (<em>str</em>) – default=’error’</p></li>
+<li><p><strong>max_iter</strong> (<em>int</em>) – default=100</p></li>
+<li><p><strong>reg_param</strong> (<em>float</em>) – default=10e-5</p></li>
+<li><p><strong>transition_scheme</strong> (<em>ndarray</em>) – shape=(n_clusters, n_clusters) or None (default=None)</p></li>
+<li><p><strong>init_scheme</strong> (<em>ndarray</em>) – shape=(n_clusters,) or None (default=None)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="myHmmPackage.cluster_decoder.ClusterDecoder.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">X</span></em>, <em class="sig-param"><span class="n">y</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/myHmmPackage/cluster_decoder.html#ClusterDecoder.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#myHmmPackage.cluster_decoder.ClusterDecoder.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>A reference implementation of a fitting function for a classifier.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>array-like</em>) – The training input samples of shape=(n_samples, n_time_points, n_regions)</p></li>
+<li><p><strong>y</strong> (<em>array-like</em>) – The target values, An array of int and of shape=(n_samples, n_time_points, n_label_features)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Returns self</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">neuroHMM</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Audren Butery, Timothée Fronteau, Solenzio Konlé, Vincent Mousseaux, Valentin Truong Minh Ky.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/cluster_decoder.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

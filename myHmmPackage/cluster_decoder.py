@@ -6,23 +6,19 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
     """
     ClusterDecoder is an Estimator that performs supervised decoding with a predefined number of decoding matrices.
     A clustering method is used to choose which decoding matrix to use for each sample of each input data.
+    The metaparameters are gamma_(ndarray, shape (n_time_points, n_clusters)) and
+    decoding_mats_(ndarray, shape (n_clusters, n_time_points, n_label_features))
 
-    Parameters
-    ----------
-    n_clusters : int, default=4
-    gamma_init : ndarray of shape (n_time_points, n_clusters) or None, default=None,
-    decoding_mats_init : ndarray of shape (n_clusters, n_time_points, n_label_features) or None, default=None,
-    method : str, default='regression',
-    measure : str, default='error',
-    max_iter : int, default=100,
-    reg_param : float, default=10e-5,
-    transition_scheme : ndarray of shape (n_clusters, n_clusters) or None, default=None,
-    init_scheme : ndarray of shape (n_clusters,) or None, default=None
 
-    Attributes
-    ----------
-    gamma_ : ndarray, shape (n_time_points, n_clusters)
-    decoding_mats_ : ndarray, shape (n_clusters, n_time_points, n_label_features)
+    :param int n_clusters: number of desired clusters (default= 4)
+    :param ndarray gamma_init: shape=(n_time_points, n_clusters) or None, (default=None)
+    :param ndarray decoding_mats_init: shape=(n_clusters, n_time_points, n_label_features) or None, (default=None)
+    :param str method: name of the method used (default='regression')
+    :param str measure: default='error'
+    :param int max_iter: default=100
+    :param float reg_param: default=10e-5
+    :param ndarray transition_scheme: shape=(n_clusters, n_clusters) or None (default=None)
+    :param ndarray init_scheme: shape=(n_clusters,) or None (default=None)
     """
     def __init__(
             self,
@@ -47,18 +43,17 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         self.init_scheme = init_scheme
 
     def fit(self, X, y):
-        """A reference implementation of a fitting function for a classifier.
-        Parameters
-        ----------
-        X : array-like, shape (n_samples, n_time_points, n_regions)
-            The training input samples.
-        y : array-like, shape (n_samples, n_time_points, n_label_features)
-            The target values. An array of int.
-        Returns
-        -------
-        self : object
-            Returns self.
+
         """
+        A reference implementation of a fitting function for a classifier.
+
+
+        :param array-like X: The training input samples of shape=(n_samples, n_time_points, n_regions)
+        :param array-like y: The target values, An array of int and of shape=(n_samples, n_time_points, n_label_features)
+
+        :returns: Returns self
+        """
+
         # Check that X and y have correct shape
         # X, y = check_X_y(X, y, multi_output=True)  # See documentation if we want to have more than 2d inputs
 
@@ -97,17 +92,19 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         #     y_predict = np.round(y_predict,0).astype(int)
         # return y_predict
 
-        # !!!il y a littéralement AUCUN 1 dans y_predict!!!
+        """
+
+        :param X:
+        :return:
+        """
         y_predict_states = np.zeros((self.n_clusters, X.shape[0], X.shape[1], self.decoding_mats_.shape[2]))
         for state in range(self.n_clusters):
             y_predict_states[state, :, :, :] = np.round(X @ self.decoding_mats_[state, :, :], 0).astype(int)
         y_predict = np.zeros((X.shape[0], X.shape[1], self.decoding_mats_.shape[2]))
         for t in range(X.shape[1]):
-            if t != X.shape[1] - 1:
-                state = self.gamma_[t,:].tolist().index(1)
+            state = self.gamma_[t,:].tolist().index(1)
             y_predict[:, t, :] = y_predict_states[state, :, t, :]
         return y_predict
-
 
     def _fit_regression(self, X, y, n_samples, n_time_points, n_regions, n_label_features):
         if self.transition_scheme is not None:
@@ -170,7 +167,7 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
 
     def _fit_sequential(self, X, y, n_samples, n_time_points, n_regions, n_label_features):
         gamma = np.zeros((n_time_points,self.n_clusters))
-        states_temp_delimitation = [0] + [int(i * np.round(n_time_points / self.n_clusters)) - 1 for i in range(1, self.n_clusters)] + [n_time_points - 1]
+        states_temp_delimitation = [0] + [int(i * np.round(n_time_points / self.n_clusters)) - 1 for i in range(1, self.n_clusters)] + [n_time_points]
         err = 0
         decoding_mats = np.zeros((self.n_clusters, n_regions, n_label_features))
 
@@ -189,8 +186,8 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
             gamma = np.zeros((n_time_points, self.n_clusters)).astype(int)
             while True:
                 states_temp_delimitation = np.cumsum(1.0 + np.random.rand(1, self.n_clusters))
-                states_temp_delimitation = np.concatenate((np.array([0]), np.floor(n_time_points * states_temp_delimitation / max(states_temp_delimitation)) - 1))
-                if ~any(np.asarray(states_temp_delimitation) == 0) and len(np.unique(states_temp_delimitation)) == len(states_temp_delimitation):
+                states_temp_delimitation = np.round(np.concatenate((np.array([0]), np.round(n_time_points * states_temp_delimitation / max(states_temp_delimitation))))).astype(int)
+                if ~any(np.asarray(states_temp_delimitation) == 0) and len(np.unique(states_temp_delimitation)) == len(states_temp_delimitation) and states_temp_delimitation[-1] == 1793:
                     break
             err = 0
 
@@ -211,7 +208,7 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
 
     def _fit_fixed_sequential(self, X, y):
         # TODO
-        raise NotImplementedError
+        pass
 
     def __check(self, X, y):
         # TODO check if dimensions and values of parameters are correct

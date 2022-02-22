@@ -1,0 +1,344 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>myHmmPackage.cluster_decoder &#8212; neuroHMM  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for myHmmPackage.cluster_decoder</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">RegressorMixin</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils.validation</span> <span class="kn">import</span> <span class="n">check_X_y</span><span class="p">,</span> <span class="n">check_array</span><span class="p">,</span> <span class="n">check_is_fitted</span>
+
+<div class="viewcode-block" id="ClusterDecoder"><a class="viewcode-back" href="../../cluster_decoder.html#myHmmPackage.cluster_decoder.ClusterDecoder">[docs]</a><span class="k">class</span> <span class="nc">ClusterDecoder</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">RegressorMixin</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ClusterDecoder is an Estimator that performs supervised decoding with a predefined number of decoding matrices.</span>
+<span class="sd">    A clustering method is used to choose which decoding matrix to use for each sample of each input data.</span>
+<span class="sd">    The metaparameters are gamma_(ndarray, shape (n_time_points, n_clusters)) and</span>
+<span class="sd">    decoding_mats_(ndarray, shape (n_clusters, n_time_points, n_label_features))</span>
+
+
+<span class="sd">    :param int n_clusters: number of desired clusters (default= 4)</span>
+<span class="sd">    :param ndarray gamma_init: shape=(n_time_points, n_clusters) or None, (default=None)</span>
+<span class="sd">    :param ndarray decoding_mats_init: shape=(n_clusters, n_time_points, n_label_features) or None, (default=None)</span>
+<span class="sd">    :param str method: name of the method used (default=&#39;regression&#39;)</span>
+<span class="sd">    :param str measure: default=&#39;error&#39;</span>
+<span class="sd">    :param int max_iter: default=100</span>
+<span class="sd">    :param float reg_param: default=10e-5</span>
+<span class="sd">    :param ndarray transition_scheme: shape=(n_clusters, n_clusters) or None (default=None)</span>
+<span class="sd">    :param ndarray init_scheme: shape=(n_clusters,) or None (default=None)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">n_clusters</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+            <span class="n">gamma_init</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">decoding_mats_init</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="s1">&#39;regression&#39;</span><span class="p">,</span>
+            <span class="n">measure</span><span class="o">=</span><span class="s1">&#39;error&#39;</span><span class="p">,</span>
+            <span class="n">max_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+            <span class="n">reg_param</span><span class="o">=</span><span class="mf">10e-5</span><span class="p">,</span>
+            <span class="n">transition_scheme</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">init_scheme</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span> <span class="o">=</span> <span class="n">n_clusters</span>  <span class="c1"># equivalent to K= nb of states in the Matlab implementation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gamma_init</span> <span class="o">=</span> <span class="n">gamma_init</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decoding_mats_init</span> <span class="o">=</span> <span class="n">decoding_mats_init</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">measure</span> <span class="o">=</span> <span class="n">measure</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span> <span class="o">=</span> <span class="n">max_iter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reg_param</span> <span class="o">=</span> <span class="n">reg_param</span>  <span class="c1"># le lambda de la normalisation L2 pour une régression linéaire (utile dans _fit_regression)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transition_scheme</span> <span class="o">=</span> <span class="n">transition_scheme</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_scheme</span> <span class="o">=</span> <span class="n">init_scheme</span>
+
+<div class="viewcode-block" id="ClusterDecoder.fit"><a class="viewcode-back" href="../../cluster_decoder.html#myHmmPackage.cluster_decoder.ClusterDecoder.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A reference implementation of a fitting function for a classifier.</span>
+
+
+<span class="sd">        :param array-like X: The training input samples of shape=(n_samples, n_time_points, n_regions)</span>
+<span class="sd">        :param array-like y: The target values, An array of int and of shape=(n_samples, n_time_points, n_label_features)</span>
+
+<span class="sd">        :returns: Returns self</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Check that X and y have correct shape</span>
+        <span class="c1"># X, y = check_X_y(X, y, multi_output=True)  # See documentation if we want to have more than 2d inputs</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__check</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+            <span class="k">return</span>
+
+        <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_time_points</span><span class="p">,</span> <span class="n">n_regions</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">n_label_features</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span>
+
+        <span class="c1"># Initialize gamma_, the matrix that affects a cluster for each time point in X</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_init</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">gamma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_time_points</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">))</span>
+            <span class="n">div</span> <span class="o">=</span> <span class="n">n_time_points</span><span class="o">//</span><span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">):</span>
+                <span class="n">gamma</span><span class="p">[</span><span class="n">k</span><span class="o">*</span><span class="n">div</span><span class="p">:(</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">div</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">gamma</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="o">*</span><span class="n">div</span><span class="p">:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gamma_</span> <span class="o">=</span> <span class="n">gamma</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gamma_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_init</span>
+
+        <span class="c1"># Perform clustering and decoding</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;regression&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fit_regression</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_time_points</span><span class="p">,</span> <span class="n">n_regions</span><span class="p">,</span> <span class="n">n_label_features</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;hierarchical&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fit_hierarchical</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;sequential&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fit_sequential</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_time_points</span><span class="p">,</span> <span class="n">n_regions</span><span class="p">,</span> <span class="n">n_label_features</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="n">y_predict_states</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoding_mats_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+        <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">):</span>
+            <span class="n">y_predict_states</span><span class="p">[</span><span class="n">state</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">X</span> <span class="o">@</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoding_mats_</span><span class="p">[</span><span class="n">state</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">y_predict</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoding_mats_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_</span><span class="p">[</span><span class="n">t</span><span class="p">,:]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">y_predict</span><span class="p">[:,</span> <span class="n">t</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">y_predict_states</span><span class="p">[</span><span class="n">state</span><span class="p">,</span> <span class="p">:,</span> <span class="n">t</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="n">y_predict</span> <span class="o">=</span> <span class="n">y_predict</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">y_predict</span>
+
+    <span class="k">def</span> <span class="nf">_fit_regression</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_time_points</span><span class="p">,</span> <span class="n">n_regions</span><span class="p">,</span> <span class="n">n_label_features</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transition_scheme</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">transition_scheme</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transition_scheme</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_scheme</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">init_scheme</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">init_scheme</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="c1"># Initialize decoding_mats_, the array containing n_cluster matrices, each decoding data for one cluster</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoding_mats_init</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">decoding_mats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">,</span> <span class="n">n_regions</span><span class="p">,</span> <span class="n">n_label_features</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">):</span>
+                <span class="n">n_time_points_in_cluster</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma_</span><span class="p">[:,</span> <span class="n">cluster</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span>
+                <span class="n">X_star</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_</span><span class="p">[:,</span> <span class="n">cluster</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="n">y_star</span> <span class="o">=</span> <span class="n">y</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_</span><span class="p">[:,</span> <span class="n">cluster</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="n">X_star</span> <span class="o">=</span> <span class="n">X_star</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">n_time_points_in_cluster</span> <span class="o">*</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_regions</span><span class="p">))</span>
+                <span class="n">y_star</span> <span class="o">=</span> <span class="n">y_star</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">n_time_points_in_cluster</span> <span class="o">*</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_label_features</span><span class="p">))</span>
+
+                <span class="n">decoding_mats</span><span class="p">[</span><span class="n">cluster</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X_star</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">X_star</span><span class="p">)</span>
+                                                <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_param</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_regions</span><span class="p">)),</span>
+                                                <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X_star</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">y_star</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">decoding_mats_</span> <span class="o">=</span> <span class="n">decoding_mats</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">decoding_mats_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoding_mats_init</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span><span class="p">):</span>
+            <span class="c1"># M step</span>
+            <span class="k">for</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">):</span>
+                <span class="n">n_time_points_in_cluster</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma_</span><span class="p">[:,</span> <span class="n">cluster</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span>
+                <span class="n">X_star</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_</span><span class="p">[:,</span> <span class="n">cluster</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="n">y_star</span> <span class="o">=</span> <span class="n">y</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_</span><span class="p">[:,</span> <span class="n">cluster</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="n">X_star</span> <span class="o">=</span> <span class="n">X_star</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">n_time_points_in_cluster</span> <span class="o">*</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_regions</span><span class="p">))</span>
+                <span class="n">y_star</span> <span class="o">=</span> <span class="n">y_star</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">n_time_points_in_cluster</span> <span class="o">*</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_label_features</span><span class="p">))</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">decoding_mats_</span><span class="p">[</span><span class="n">cluster</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X_star</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">X_star</span><span class="p">)</span>
+                                                      <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_param</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_regions</span><span class="p">)),</span>
+                                                      <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X_star</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">y_star</span><span class="p">))</span>
+
+            <span class="c1"># E step</span>
+            <span class="n">err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_time_points</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">):</span>
+                <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">((</span><span class="n">y</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoding_mats_</span><span class="p">[</span><span class="n">cluster</span><span class="p">])),</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+                <span class="n">err</span><span class="p">[:,</span> <span class="n">cluster</span><span class="p">]</span> <span class="o">=</span> <span class="n">norm</span>
+            <span class="n">gamma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_time_points</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">))</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_scheme</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">err</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_scheme</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">err</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">gamma</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">state</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_time_points</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transition_scheme</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">err</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">transition_scheme</span><span class="p">[</span><span class="n">state</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+                <span class="n">state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">err</span><span class="p">[</span><span class="n">t</span><span class="p">])</span>
+                <span class="n">gamma</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">state</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">gamma</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+                <span class="k">break</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gamma_</span> <span class="o">=</span> <span class="n">gamma</span>
+
+    <span class="k">def</span> <span class="nf">_fit_hierarchical</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="c1"># TODO</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_fit_sequential</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_time_points</span><span class="p">,</span> <span class="n">n_regions</span><span class="p">,</span> <span class="n">n_label_features</span><span class="p">):</span>
+        <span class="n">gamma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_time_points</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">))</span>
+        <span class="n">states_temp_delimitation</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">n_time_points</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">))</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="n">n_time_points</span><span class="p">]</span>
+        <span class="n">err</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">decoding_mats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">,</span> <span class="n">n_regions</span><span class="p">,</span> <span class="n">n_label_features</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">states</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">):</span>  <span class="c1"># le mat_assig_states[0] = 0 c&#39;est un peu bizarre</span>
+            <span class="n">gamma</span><span class="p">[</span><span class="n">states_temp_delimitation</span><span class="p">[</span><span class="n">states</span><span class="p">]:</span><span class="n">states_temp_delimitation</span><span class="p">[</span><span class="n">states</span> <span class="o">+</span><span class="mi">1</span> <span class="p">],</span> <span class="n">states</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">Xstar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="n">X</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gamma</span><span class="p">[:,</span> <span class="n">states</span><span class="p">]))</span> <span class="k">if</span> <span class="n">gamma</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">states</span><span class="p">]],</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">gamma</span><span class="p">[:,</span> <span class="n">states</span><span class="p">])</span> <span class="o">*</span> <span class="n">n_samples</span><span class="p">),</span> <span class="n">n_regions</span><span class="p">])</span>
+            <span class="n">ystar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="n">y</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gamma</span><span class="p">[:,</span> <span class="n">states</span><span class="p">]))</span> <span class="k">if</span> <span class="n">gamma</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">states</span><span class="p">]],</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">gamma</span><span class="p">[:,</span> <span class="n">states</span><span class="p">])</span> <span class="o">*</span> <span class="n">n_samples</span><span class="p">),</span> <span class="n">n_label_features</span><span class="p">])</span>
+            <span class="n">decoding_mats</span><span class="p">[</span><span class="n">states</span><span class="p">,:,:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">pinv</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">Xstar</span><span class="p">)</span> <span class="o">@</span> <span class="n">Xstar</span> <span class="o">+</span> <span class="mf">0.0001</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">Xstar</span><span class="p">)[</span><span class="mi">1</span><span class="p">]))</span> <span class="o">@</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">Xstar</span><span class="p">)</span> <span class="o">@</span> <span class="n">ystar</span><span class="p">)</span>
+            <span class="n">err</span> <span class="o">=</span> <span class="n">err</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="nb">sum</span><span class="p">((</span><span class="n">ystar</span> <span class="o">-</span> <span class="n">Xstar</span> <span class="o">@</span> <span class="n">decoding_mats</span><span class="p">[</span><span class="n">states</span><span class="p">,:,:])</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))</span>
+
+        <span class="n">err_best</span> <span class="o">=</span> <span class="n">err</span>
+        <span class="n">gamma_best</span> <span class="o">=</span> <span class="n">gamma</span>
+        <span class="n">decoding_mats_best</span> <span class="o">=</span> <span class="n">decoding_mats</span>
+
+        <span class="k">for</span> <span class="n">iteration</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span><span class="p">):</span>
+            <span class="n">gamma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_time_points</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">states_temp_delimitation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">))</span>
+                <span class="n">states_temp_delimitation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">n_time_points</span> <span class="o">*</span> <span class="n">states_temp_delimitation</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">states_temp_delimitation</span><span class="p">)))))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+                <span class="k">if</span> <span class="o">~</span><span class="nb">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">states_temp_delimitation</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">states_temp_delimitation</span><span class="p">))</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">states_temp_delimitation</span><span class="p">)</span> <span class="ow">and</span> <span class="n">states_temp_delimitation</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1793</span><span class="p">:</span>
+                    <span class="k">break</span>
+            <span class="n">err</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">for</span> <span class="n">states</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">):</span>
+                <span class="n">gamma</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">states_temp_delimitation</span><span class="p">[</span><span class="n">states</span><span class="p">]):</span><span class="nb">int</span><span class="p">(</span><span class="n">states_temp_delimitation</span><span class="p">[</span><span class="n">states</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]),</span> <span class="n">states</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">Xstar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span> <span class="n">gamma</span><span class="p">[:,</span> <span class="n">states</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:],</span> <span class="p">[</span><span class="nb">sum</span><span class="p">(</span><span class="n">gamma</span><span class="p">[:,</span> <span class="n">states</span><span class="p">])</span> <span class="o">*</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_regions</span><span class="p">])</span>
+                <span class="n">ystar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">y</span><span class="p">[:,</span> <span class="n">gamma</span><span class="p">[:,</span> <span class="n">states</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:],</span> <span class="p">[</span><span class="nb">sum</span><span class="p">(</span><span class="n">gamma</span><span class="p">[:,</span> <span class="n">states</span><span class="p">])</span> <span class="o">*</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_label_features</span><span class="p">])</span>
+                <span class="n">decoding_mats</span><span class="p">[</span><span class="n">states</span><span class="p">,:,:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">pinv</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">Xstar</span><span class="p">)</span> <span class="o">@</span> <span class="n">Xstar</span> <span class="o">+</span> <span class="mf">0.0001</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">Xstar</span><span class="p">)[</span><span class="mi">1</span><span class="p">]))</span> <span class="o">@</span> <span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">Xstar</span><span class="p">)</span> <span class="o">@</span> <span class="n">ystar</span><span class="p">))</span>
+                <span class="n">err</span> <span class="o">=</span> <span class="n">err</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="nb">sum</span><span class="p">((</span><span class="n">ystar</span> <span class="o">-</span> <span class="n">Xstar</span> <span class="o">@</span> <span class="n">decoding_mats</span><span class="p">[</span><span class="n">states</span><span class="p">,:,:])</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))</span>
+
+            <span class="k">if</span> <span class="n">err</span> <span class="o">&lt;</span> <span class="n">err_best</span><span class="p">:</span>
+                <span class="n">err_best</span> <span class="o">=</span> <span class="n">err</span>
+                <span class="n">gamma_best</span> <span class="o">=</span> <span class="n">gamma</span>
+                <span class="n">decoding_mats_best</span> <span class="o">=</span> <span class="n">decoding_mats</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">gamma_</span> <span class="o">=</span> <span class="n">gamma_best</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decoding_mats_</span> <span class="o">=</span> <span class="n">decoding_mats_best</span>
+
+    <span class="k">def</span> <span class="nf">_fit_fixed_sequential</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="c1"># TODO</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">__check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="c1"># TODO check if dimensions and values of parameters are correct</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        dimensions X and y == (n_samples, n_time_points, n_regions) and (n_samples, n_time_points, n_label_features)</span>
+<span class="sd">        dimensions (and values) transition_scheme == (self.n_clusters, self.n_clusters)</span>
+<span class="sd">        dimensions gamma_init == (n_time_points, self.n_clusters)</span>
+<span class="sd">        dimensions decoding_mats_init == (self.n_clusters, n_regions, n_label_features)</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;X need to be in 3 dimensions (n_samples, n_time_points, n_regions)&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;y need to be in 3 dimensions (n_samples, n_time_points, n_label_features)&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The first two dimensions of X and y must be the same&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transition_scheme</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">transition_scheme</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transition_scheme</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transition_scheme</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;transition_scheme&#39;s dimensions need to be: (n_clusters, n_clusters)&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_scheme</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">init_scheme</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">init_scheme</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_scheme</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;init_scheme&#39;s dimensions need to be: (n_clusters,)&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_init</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gamma_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma_init</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_init</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;gamma_init&#39;s dimensions need to be: (n_time_points, n_clusters)&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoding_mats_init</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoding_mats_init</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;decoding_mats_init&#39;s dimensions need to be: (n_samples, n_time_points, n_label_features)&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="kc">True</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">neuroHMM</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Audren Butery, Timothée Fronteau, Solenzio Konlé, Vincent Mousseaux, Valentin Truong Minh Ky.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

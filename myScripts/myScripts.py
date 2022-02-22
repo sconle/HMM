@@ -72,10 +72,8 @@ if TEST == "cluster_decoding":
     plt.show()
 
 elif TEST == "cluster_decoder":
-    decoder = ClusterDecoder(method='regression',
-                             max_iter=10,
-                             init_scheme=np.array([0, 0, 0, 1]),
-                             transition_scheme=[[1,1,0,0],[0,1,1,0],[0,0,1,1],[1,0,0,1]])
+    decoder = ClusterDecoder(method='sequential',
+                             max_iter=10)
 
     X1 = ds['timecourse'].values[:, :, np.newaxis]
     X2 = ds2['timecourse'].values[:, :, np.newaxis]
@@ -89,17 +87,18 @@ elif TEST == "cluster_decoder":
     for i in range(n_time_points):
         y[:,i] = y_
 
-    if TEST_DATA == "generated":
-        X = np.array([np.random.normal(loc=[10, 30], scale=[1, 1.5], size=(1000, 2)) for _ in range(100)])
-        y = (np.random.randint(10, size=100) == 0).astype(int)
-        state = 0
-        for i in range(y.shape[0]):
-            if y[i] == 1 and state == 0:
-                state = 1
-            if y[i] == 1 and state == 1:
-                state = 0
-            if state == 1:
-                y[i] = 1
+
+    #if TEST_DATA == "generated":
+    #    X = np.array([np.random.normal(loc=[10, 30], scale=[1, 1.5], size=(1000, 2)) for _ in range(100)])
+    #    y = (np.random.randint(10, size=100) == 0).astype(int)
+    #    state = 0
+    #    for i in range(y.shape[0]):
+    #        if y[i] == 1 and state == 0:
+    #            state = 1
+    #        if y[i] == 1 and state == 1:
+    #            state = 0
+    #        if state == 1:
+    #            y[i] = 1
 
 
 
