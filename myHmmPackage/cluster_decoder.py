@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
-from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 
 class ClusterDecoder(BaseEstimator, RegressorMixin):
     """
@@ -27,8 +26,8 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
             decoding_mats_init=None,
             method='regression',
             measure='error',
-            max_iter=100,
-            reg_param=10e-5,
+            max_iter=1e2,
+            reg_param=1e-5,
             transition_scheme=None,
             init_scheme=None,
     ):
@@ -37,7 +36,7 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         self.decoding_mats_init = decoding_mats_init
         self.method = method
         self.measure = measure
-        self.max_iter = max_iter
+        self.max_iter = int(max_iter)
         self.reg_param = reg_param  # le lambda de la normalisation L2 pour une régression linéaire (utile dans _fit_regression)
         self.transition_scheme = transition_scheme
         self.init_scheme = init_scheme
