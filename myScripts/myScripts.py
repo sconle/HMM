@@ -58,8 +58,6 @@ if TEST == "cluster_decoding":
     for i in range(ttrial):
         Y[i]=y
 
-
-
     X = np.reshape(X, (ttrial*N, p))
     Y = np.reshape(Y, (ttrial*N, 1))
     T = (np.ones((N, 1)))*ttrial

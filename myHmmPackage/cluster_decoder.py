@@ -1,5 +1,7 @@
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 
 class ClusterDecoder(BaseEstimator, RegressorMixin):
     """
@@ -160,9 +162,42 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
                 break
             self.gamma_ = gamma
 
-    def _fit_hierarchical(self, X, y):
-        # TODO
-        raise NotImplementedError
+    def _fit_hierarchical(self, X, y, n_samples, n_time_points, n_regions, n_label_features):
+        time_wise_decoding_mats = np.ones(n_time_points, n_regions, n_label_features)
+        for t in range(n_time_points):
+            time_wise_decoding_mats[t] = np.dot(np.linalg.inv(np.dot(X[:, t, :].T, X[:, t, :])
+                                                + self.reg_param * np.eye(n_regions)),
+                                                np.dot(X[:, t, :].T, y[:, t, :]))
+        divergence_mat = np.zeros(n_time_points, n_time_points)
+        for i in range(n_time_points):
+            for j in range(i+1, n_time_points):
+                err_ij = np.linalg.norm(y[:, j, :] - np.dot(X[:, j, :], time_wise_decoding_mats[i]))
+                err_ji = np.linalg.norm(y[:, i, :] - np.dot(X[:, i, :], time_wise_decoding_mats[j]))
+                divergence_mat[i, j] = err_ij + err_ji
+                divergence_mat[j, i] = err_ij + err_ji
+        model = AgglomerativeClustering(n_clusters=self.n_clusters, affinity='precomputed')
+        clusters = model.fit_predict(divergence_mat)
+        gamma = np.zeros((n_time_points, self.n_clusters))
+        for cluster in range(self.n_clusters):
+            gamma[clusters[cluster], cluster] = 1
+
+        del time_wise_decoding_mats
+        del divergence_mat
+        del clusters
+
+        self.gamma_ = gamma
+        decoding_mats = np.zeros((self.n_clusters, n_regions, n_label_features))
+        for cluster in range(self.n_clusters):
+            n_time_points_in_cluster = sum(self.gamma_[:, cluster].astype(int))
+            X_star = X[:, self.gamma_[:, cluster].astype(int) == 1, :]
+            y_star = y[:, self.gamma_[:, cluster].astype(int) == 1, :]
+            X_star = X_star.reshape((n_time_points_in_cluster * n_samples, n_regions))
+            y_star = y_star.reshape((n_time_points_in_cluster * n_samples, n_label_features))
+
+            decoding_mats[cluster] = np.dot(np.linalg.inv(np.dot(X_star.T, X_star)
+                                                          + self.reg_param * np.eye(n_regions)),
+                                            np.dot(X_star.T, y_star))
+        self.decoding_mats_ = decoding_mats
 
     def _fit_sequential(self, X, y, n_samples, n_time_points, n_regions, n_label_features):
         gamma = np.zeros((n_time_points,self.n_clusters))
