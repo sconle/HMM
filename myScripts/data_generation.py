@@ -28,8 +28,8 @@ y = X @ (gamma @ W_) + eps
 y = np.reshape(y, newshape=(n_samples, n_time_points, n_regions))
 
 if __name__=='__main__':
-    print(f"Starting cluster decoder ... ", end='')
-    clf = ClusterDecoder(n_clusters=n_models, method='sequential', max_iter=1e4)
+    print(f"Starting cluster decoder ... ")
+    clf = ClusterDecoder(n_clusters=n_models, method='sequential')
     clf.fit(X,y)    
     print('done\n')
 

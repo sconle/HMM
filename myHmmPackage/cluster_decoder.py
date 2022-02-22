@@ -181,12 +181,12 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         gamma_best = gamma
         decoding_mats_best = decoding_mats
 
-        for iteration in range(1, self.max_iter):
+        for _ in range(1, self.max_iter):
             gamma = np.zeros((n_time_points, self.n_clusters)).astype(int)
             while True:
                 states_temp_delimitation = np.cumsum(1.0 + np.random.rand(1, self.n_clusters))
                 states_temp_delimitation = np.round(np.concatenate((np.array([0]), np.round(n_time_points * states_temp_delimitation / max(states_temp_delimitation))))).astype(int)
-                if ~any(np.asarray(states_temp_delimitation) == 0) and len(np.unique(states_temp_delimitation)) == len(states_temp_delimitation) and states_temp_delimitation[-1] == 1793:
+                if ~any(np.asarray(states_temp_delimitation) == 0) and len(np.unique(states_temp_delimitation)) == len(states_temp_delimitation) and states_temp_delimitation[-1] == n_time_points:
                     break
             err = 0
 

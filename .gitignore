@@ -9,3 +9,4 @@ venv38
 .venv/
 __pycache__
 .__pycache__/*
+/myHmmPackage/__pycache__
