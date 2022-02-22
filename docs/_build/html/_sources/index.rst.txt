@@ -6,10 +6,17 @@
 Welcome to neuroHMM's documentation!
 ====================================
 
+salut à tous
+
 .. toctree::
    :maxdepth: 2
+   :hidden:
    :caption: Contents:
-   ./cluster_decoder.rst
+
+   theory.rst
+   user_guide.rst
+   cluster_decoder.rst
+   example.rst
 
 
 
