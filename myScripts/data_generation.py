@@ -29,8 +29,8 @@ y = np.reshape(y, newshape=(n_samples, n_time_points, n_regions))
 
 if __name__=='__main__':
     print(f"Starting cluster decoder ... ")
-    clf = ClusterDecoder(n_clusters=n_models, method='sequential')
-    clf.fit(X,y)    
+    clf = ClusterDecoder(n_clusters=n_models, method='hierarchical', max_iter=1e3)
+    clf.fit(X,y) 
     print('done\n')
 
     W_true_flatten = W.flatten()

@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.cluster import AgglomerativeClustering
-from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
+from tqdm.auto import tqdm
 
 class ClusterDecoder(BaseEstimator, RegressorMixin):
     """
@@ -79,7 +79,7 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         if self.method == 'regression':
             self._fit_regression(X, y, n_samples, n_time_points, n_regions, n_label_features)
         elif self.method == 'hierarchical':
-            self._fit_hierarchical(X, y)
+            self._fit_hierarchical(X, y, n_samples, n_time_points, n_regions, n_label_features)
         elif self.method == 'sequential':
             self._fit_sequential(X, y, n_samples, n_time_points, n_regions, n_label_features)
 
@@ -163,22 +163,23 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
             self.gamma_ = gamma
 
     def _fit_hierarchical(self, X, y, n_samples, n_time_points, n_regions, n_label_features):
-        time_wise_decoding_mats = np.ones(n_time_points, n_regions, n_label_features)
+        time_wise_decoding_mats = np.ones((n_time_points, n_regions, n_label_features))
         for t in range(n_time_points):
             time_wise_decoding_mats[t] = np.dot(np.linalg.inv(np.dot(X[:, t, :].T, X[:, t, :])
                                                 + self.reg_param * np.eye(n_regions)),
                                                 np.dot(X[:, t, :].T, y[:, t, :]))
-        divergence_mat = np.zeros(n_time_points, n_time_points)
+        divergence_mat = np.zeros((n_time_points, n_time_points))
         for i in range(n_time_points):
             for j in range(i+1, n_time_points):
                 err_ij = np.linalg.norm(y[:, j, :] - np.dot(X[:, j, :], time_wise_decoding_mats[i]))
                 err_ji = np.linalg.norm(y[:, i, :] - np.dot(X[:, i, :], time_wise_decoding_mats[j]))
                 divergence_mat[i, j] = err_ij + err_ji
                 divergence_mat[j, i] = err_ij + err_ji
+        # TODO : pb ici avec l'argument precomputed
         model = AgglomerativeClustering(n_clusters=self.n_clusters, affinity='precomputed')
         clusters = model.fit_predict(divergence_mat)
         gamma = np.zeros((n_time_points, self.n_clusters))
-        for cluster in range(self.n_clusters):
+        for cluster in tqdm(range(self.n_clusters)):
             gamma[clusters[cluster], cluster] = 1
 
         del time_wise_decoding_mats
@@ -216,7 +217,7 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         gamma_best = gamma
         decoding_mats_best = decoding_mats
 
-        for _ in range(1, self.max_iter):
+        for _ in tqdm(range(1, self.max_iter)):
             gamma = np.zeros((n_time_points, self.n_clusters)).astype(int)
             while True:
                 states_temp_delimitation = np.cumsum(1.0 + np.random.rand(1, self.n_clusters))
