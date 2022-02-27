@@ -3,6 +3,7 @@ from sklearn.base import BaseEstimator
 
 class HMM(BaseEstimator):
     def __init__(self):
+        raise NotImplementedError
 
     def fit(self, X, y):        
         raise NotImplementedError
