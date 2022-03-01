@@ -1,0 +1,521 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "3hy4U3sVZjca"
+   },
+   "source": [
+    "# Univariate TDE-HMM"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "d1uYo-CHZjcg"
+   },
+   "source": [
+    "In this notebook, we apply a TDE-HMM on the time course of a single independent component (IC). The notebook is separated in three distinct parts:\n",
+    "- In the first part, we import or define the libraries and methods that will be usefull to execute the code. We also define the location of the where to find and store our data.\n",
+    "- In the second part, we specify the metaparameters and options we want for the execution of the code.\n",
+    "- In the third part, we run the TDE-HMM on our raw data with specified parameters, then store it in netCDF files. Finally, we can decide to plot some interesting results on figures."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "EQbNLEEaZjch"
+   },
+   "source": [
+    "## Libraries, Functions, Storage"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "IPnKQiWwZjci"
+   },
+   "source": [
+    "##### Libraries and functions"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {
+    "id": "VcqTOET7Zjci",
+    "pycharm": {
+     "is_executing": true
+    },
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Storage management\n",
+    "import pickle   # The inferred model parameters are stored in a .pkl file\n",
+    "import h5py   # Manages .mat files in Python\n",
+    "from loader import load_oneIC  # Stores temporarily useful data from our .mat data file in a dictionary\n",
+    "import xarray as xr   # Manages .nc (netCDF) files in Python.\n",
+    "                      # The states' informations are stored in a .nc file for each subject.\n",
+    "\n",
+    "# Scientific computing\n",
+    "import numpy as np\n",
+    "from sklearn.decomposition import PCA\n",
+    "from sklearn.preprocessing import scale\n",
+    "from hmmlearn import hmm\n",
+    "import scipy.signal as signal\n",
+    "import mne\n",
+    "from wavelet_transform import wavelet_transform\n",
+    "\n",
+    "# Else\n",
+    "import matplotlib.pyplot as plt\n",
+    "import matplotlib.colors as colors\n",
+    "import time as tm"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "wwGF6886Zjck"
+   },
+   "source": [
+    "##### Storage"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "nyS5SdWdZjck"
+   },
+   "source": [
+    "`FCK_LOCKED_IC_JYOTIKA_250819.mat` contains 23x4 Matlab structures containing the data for each of the 23 subjects\n",
+    "and each IC when they exist. The existing ICs can be visualised in the `data_structure.png` screen capture, or using \n",
+    "Matlab. Each of these structures, when they exist, contain the fields we can visualise in the `data_labels.png`\n",
+    "screen capture or using Matlab.\n",
+    "\n",
+    "The way we access these data with Python can be understood by reading the loader.py script."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {
+    "id": "7J5BJjNRZjcl"
+   },
+   "outputs": [],
+   "source": [
+    "# Storage management\n",
+    "import matplotlib.pyplot as plt\n",
+    "import xarray as xr   # Manages .nc (netCDF) files in Python.\n",
+    "                      # The states' informations are stored in a .nc file for each subject.\n",
+    "\n",
+    "# Scientific computing\n",
+    "import os\n",
+    "import sys\n",
+    "from myHmmPackage.cluster_decoding import *\n",
+    "from myHmmPackage.cluster_decoder import *"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "ciLePxetZjcm"
+   },
+   "source": [
+    "`data_dir` and `figures_dir` are the directories in which you will store and search for the data and the figures the algorithm produces."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {
+    "id": "XK6ek2ejZjcn"
+   },
+   "outputs": [],
+   "source": [
+    "figures_dir = \"../data/figures/\"\n",
+    "data_dir = \"../data/model_data/\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "v8Ng_veaZjcn"
+   },
+   "source": [
+    "##### Other useful functions"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "zq9NDUIjZjcn"
+   },
+   "source": [
+    "The embedx function copies the `x` array len(lags) times into `xe` with lags (i.e. time delays) between `lags[0]` and `lags[-1]` (we implement the time-delay array for the HMM)."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "EbkiFiTNZjco"
+   },
+   "source": [
+    "The `statesPSD` function returns the Power Spectral Density (PSD) characterising each state of the inferred HMM using the Welch method on the bits of raw time-courses in which the state is 'on' (probability of presence > 2/3). It is a non-parametric method since we don't use the inferred parameters of the HMM to compute this PSD. The frequency axis corresponding with the computed PSD is also returned with `freqs`."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {
+    "id": "HsGHbLpTZjcp"
+   },
+   "outputs": [],
+   "source": [
+    "def statesPSD(gamma, n_states, xe, fs=256/3):\n",
+    "\n",
+    "    psd_all = []\n",
+    "    for i in range(n_states):\n",
+    "\n",
+    "        # Compute PSD separately for each lag\n",
+    "        tot = []\n",
+    "        for seg in xe[gamma[:, i]>(2/3), :].T:\n",
+    "            freqs, psd = signal.welch(x=seg, fs=fs, nfft=1000)\n",
+    "            tot.append(psd)\n",
+    "        psd = np.mean(np.asarray(tot), 0)\n",
+    "        psd_all.append(psd)\n",
+    "    \n",
+    "    psd_all = np.asarray(psd_all)\n",
+    "    \n",
+    "    return freqs, psd_all"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "hfc_Z8-oZjcp"
+   },
+   "source": [
+    "## Parameters"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {
+    "id": "oeER8o4eZjcp"
+   },
+   "outputs": [],
+   "source": [
+    "### Imput data parameters\n",
+    "# subj_list = [2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 14, 16, 17, 18, 19, 20, 21, 22, 23] # All except 1, 9, 13, 15\n",
+    "# subj_list = [2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 14, 16, 17, 18, 19, 22, 23] # same && IC1 exists\n",
+    "subj_list = [2]\n",
+    "# IC_list = [1, 2, 3, 4]\n",
+    "IC_list = [1]\n",
+    "downsamp_rate = 3  # The downsampling rate of the raw time-courses\n",
+    "# downsamp_rate = 1\n",
+    "## start_idx and end_idx are the indexes of the trial time-courses on which you want to start and end the HMM.\n",
+    "start_idx = 0  # Corresponds to the beginning of the trials, i.e. -4s.\n",
+    "# start_idx = 4*256  # Corresponds to the time-locking (i.e.0s)\n",
+    "end_idx = -1  # Corresponds to the end of the trial (i.e. 3s)\n",
+    "# end_idx = 4*256  # Corresponds to the time-locking (i.e.0s)\n",
+    "lags = np.arange(-5, 5)  # The time-delay embedding\n",
+    "# lags = np.arange(-29, 29)\n",
+    "# lags = np.arange(-11, 12)\n",
+    "n_lags = lags.shape[0]\n",
+    "apply_PCA = False  # Do we apply a PCA before inferring the HMM?\n",
+    "n_components = 0     # Number of principal components in case of PCA\n",
+    "# n_components = 40\n",
+    "\n",
+    "### HMM parameters\n",
+    "all_subj_first = False   # Do we compute the model on all subjects before refining it for each subject?\n",
+    "covariance_type = 'full'\n",
+    "# covariance_type = 'diag'  # ONLY IN CASE OF PCA\n",
+    "n_iter = 1000000  # The maximum number of iterations of the EM algorithm if we don't meet the next requirement.\n",
+    "tol = 0.01  # The EM algorithm will stop if the maximum likelihood of the HMM \n",
+    "            # varies under this tolerence for each iteration.\n",
+    "\n",
+    "### Output data parameters\n",
+    "# n_states_list = [3, 4, 5, 6]    # Number of hidden Markov states. Must be a list.\n",
+    "n_states_list = [3]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "xiUIrKUPZjcq"
+   },
+   "source": [
+    "## Script"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "KpvLZwdhZjcq"
+   },
+   "source": [
+    "##### Inferring the HMM on all subjects of `subj_list` concatenated together"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "uIJV6AW0Zjcr"
+   },
+   "source": [
+    "##### Inferring the HMM on each subject of `subj_list` one after the other"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {
+    "id": "25lwnivoZjcr",
+    "outputId": "c6fa0919-6393-421d-a65b-0d3b6b14c668"
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "****** 3 STATES ******\n",
+      "    ** SUBJECT2 **    \n",
+      "---- SUBJECT2, IC1 - 3 states ----\n",
+      "Loading the raw timecourse\n",
+      "Computing and saving the model\n",
+      "ok1\n",
+      "ok2\n",
+      "ok3\n",
+      "ok4\n",
+      "ok5\n",
+      "ok6\n",
+      "Computing the Probability time-course and the Power Spectral Density of each state\n",
+      "Model for subj2, IC1 computed: 76 seconds\n",
+      "Saving the data for subj2: Proba. time-course, Frac. occupancy and PSD\n",
+      "Run time: 0h1mn16.18023371696472s\n"
+     ]
+    }
+   ],
+   "source": [
+    "complete_time = tm.time()\n",
+    "for n_states in n_states_list:\n",
+    "    print(f\"****** {n_states} STATES ******\")\n",
+    "    for subj in subj_list:\n",
+    "        print(f\"    ** SUBJECT{subj} **    \")\n",
+    "        tcourses = []\n",
+    "        psds = []\n",
+    "        IC_new_list = []\n",
+    "        for IC in IC_list:\n",
+    "            start_time = tm.time()\n",
+    "            try:\n",
+    "                print(f\"---- SUBJECT{subj}, IC{IC} - {n_states} states ----\")\n",
+    "                # Loading all data for subject{subj}, IC{IC}\n",
+    "                dirname = os.path.dirname(__file__ + \"/../../\")\n",
+    "                filename = dirname + f\"/data/su{subj}IC{IC}_rawdata.nc\"\n",
+    "                ds = xr.open_dataset(filename)\n",
+    "                X = ds['timecourse'].values\n",
+    "                \n",
+    "                print(\"Computing and saving the model\")\n",
+    "                model = TDE_HMM(n_components=n_states, n_iter=n_iter,\n",
+    "                                covariance_type=covariance_type, tol=tol) # MODIFY PARAMETERS\n",
+    "                print(\"ok1\")\n",
+    "                model.fit(X)\n",
+    "                print(\"ok2\")\n",
+    "                with open(data_dir + f\"su{subj}IC{IC}_st{n_states}_lg{n_lags}co{n_components}\"\n",
+    "                    + \"UnivariateGaussianHMM.pkl\", \"wb\") as file: pickle.dump(model, file)\n",
+    "                print(\"Computing the Probability time-course and the Power Spectral Density of each state\")\n",
+    "                gamma = model.predict_proba(X)\n",
+    "                print(\"ok3\")\n",
+    "                tcourse = np.concatenate(\n",
+    "                    (np.zeros((abs(lags[0]),n_states)), gamma, np.zeros((lags[-1],n_states)))\n",
+    "                )\n",
+    "                t_len = data[\"time_axis\"][start_idx:end_idx:downsamp_rate].shape[0]\n",
+    "                tcourse_trials = np.zeros((n_trials, t_len, n_states))\n",
+    "                for tr in range(n_trials):\n",
+    "                    tcourse_trials[tr] = tcourse[tr*t_len:(tr+1)*t_len]\n",
+    "                tcourses.append(tcourse_trials[np.newaxis])\n",
+    "                freqs, psd = statesPSD(gamma, n_states, xe[0], fs=256/downsamp_rate)\n",
+    "                psd = psd[np.newaxis,]\n",
+    "                psds.append(psd)\n",
+    "                IC_new_list.append(IC)\n",
+    "                print(f\"Model for subj{subj}, IC{IC} computed: {int(tm.time() - start_time)} seconds\")\n",
+    "            except:\n",
+    "                print(f\"The model for subj{subj}, IC{IC} was NOT computed\")\n",
+    "        print(f\"Saving the data for subj{subj}: Proba. time-course, Frac. occupancy and PSD\")\n",
+    "        if len(tcourses)>1:\n",
+    "            tcourses = np.concatenate((tcourses))\n",
+    "            psds = np.concatenate((psds))\n",
+    "        else:\n",
+    "            tcourses = tcourses[0]\n",
+    "            psds = psds[0]\n",
+    "        ds = xr.Dataset(\n",
+    "            {\n",
+    "                \"states_timecourse\": ((\"IC\", \"trials\",\"time\", \"states\"), tcourses),\n",
+    "                \"states_psd\": ((\"IC\", \"states\", \"freq\"), psds),\n",
+    "            },\n",
+    "            {\n",
+    "                \"IC\":IC_new_list,\n",
+    "                \"time\":data[\"time_axis\"][start_idx:end_idx:downsamp_rate],\n",
+    "                \"states\":np.arange(1, n_states+1),\n",
+    "                \"freq\": freqs,\n",
+    "            }\n",
+    "        )\n",
+    "        ds = ds.assign(frac_occ = (ds[\"states_timecourse\"].sum(\"trials\")/ds.sizes[\"trials\"]))\n",
+    "        ds.to_netcdf(data_dir + f\"su{subj}_st{n_states}_lg{n_lags}co{n_components}_data.nc\")\n",
+    "\n",
+    "\n",
+    "sec_time = tm.time() - complete_time\n",
+    "hr_time = int(sec_time/3600)\n",
+    "sec_time = sec_time - (hr_time*3600)\n",
+    "mn_time = int(sec_time/60)\n",
+    "sec_time = sec_time - (mn_time*60)\n",
+    "print(f\"Run time: {hr_time}h{mn_time}mn{sec_time}s\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "fsih2YosZjcs"
+   },
+   "source": [
+    "##### Plotting the fractional occupancies of the states, the averaged wavelet-transform and rhe states PSD on one big figure for each subject, each IC"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "UIjPybv-Zjct"
+   },
+   "outputs": [],
+   "source": [
+    "info = mne.create_info(ch_names=['signal'], sfreq=256, ch_types=['eeg'])\n",
+    "\n",
+    "for n_states in n_states_list:\n",
+    "    widths = [14, 1, 5]\n",
+    "    heights = [1 for i in range(n_states)] + [4]\n",
+    "    gs_kw = dict(width_ratios=widths, height_ratios=heights, wspace=0.0, hspace=0.0)\n",
+    "    for subj in subj_list:\n",
+    "        ds = xr.open_dataset(data_dir + f\"su{subj}_st{n_states}_lg{n_lags}co{n_components}_data.nc\")\n",
+    "        start_t = ds[\"time\"].values[0]\n",
+    "        end_t = ds[\"time\"].values[-1]\n",
+    "        for IC in IC_list:\n",
+    "            idx = np.searchsorted(ds[\"IC\"].values, IC)\n",
+    "            try:\n",
+    "                fig, f_axes = plt.subplots(figsize=(sum(widths),sum(heights)), ncols=3, \n",
+    "                                            nrows=(n_states+1), constrained_layout=True,\n",
+    "                                            gridspec_kw=gs_kw)\n",
+    "                for state in ds[\"states\"].values:\n",
+    "                    ax = f_axes[state-1,0]\n",
+    "                    ax.plot(ds[\"time\"].values, ds[\"frac_occ\"].values[idx, :, state-1], color=f\"C{state-1}\")\n",
+    "                    ax.set_xlim([-4, 3])\n",
+    "                    ax.set_ylabel(f\"state {state}\")\n",
+    "\n",
+    "                ax = f_axes[n_states,0]\n",
+    "                data, n_trials = load_oneIC(mat_file, cells_refs, subj, IC)\n",
+    "                tfr = wavelet_transform(data, info, trial=np.arange(1,n_trials+1))\n",
+    "                mappable = ax.imshow(tfr[0], aspect='auto', origin='lower', extent=[-4, 3, 2, 50], \n",
+    "                                       norm=colors.PowerNorm(gamma=0.5), cmap='RdYlBu_r')\n",
+    "                ax.set_ylabel(f'Frequencies IC{IC} (Hz)')\n",
+    "                ax.set_xlabel(f'Time (s)')\n",
+    "                fig.colorbar(mappable, cax=f_axes[n_states,1])\n",
+    "\n",
+    "                ax = f_axes[n_states,2]\n",
+    "                ax.plot(ds[\"freq\"].values, ds[\"states_psd\"].values[idx,].T)\n",
+    "                ax.set_ylabel(f'PSD IC{IC}')\n",
+    "                ax.set_xlabel(f'Frequency (Hz)') \n",
+    "                lines = ax.get_lines()\n",
+    "                labels = [f\"State {i}\" for i in range (1, n_states+1)]\n",
+    "                ax = f_axes[0,2]\n",
+    "                ax.legend(lines, labels, loc='upper left')\n",
+    "\n",
+    "#                 fig.savefig(figures_dir + f'grid-{n_states}states-subj{subj}-IC{IC}.png', dpi=300)\n",
+    "#                 plt.close(fig)\n",
+    "            except:\n",
+    "                print(f\"IC{IC} of subject {subj} does not exist\")\n",
+    "#                 plt.close(fig)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "h7QwBVgTZjcu"
+   },
+   "source": [
+    "##### Plotting the time-course of each states for `n_trials_to_plot` trials on a figure for each subject, each IC"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "o_4E9QqSZjcu"
+   },
+   "outputs": [],
+   "source": [
+    "n_trials_to_plot = 5\n",
+    "\n",
+    "for n_states in n_states_list:\n",
+    "    for subj in subj_list:\n",
+    "        fig, f_axes = plt.subplots(figsize=(20,n_states*n_trials_to_plot), ncols=1, \n",
+    "                                   nrows=(n_states*n_trials_to_plot), constrained_layout=True)\n",
+    "        for IC in IC_list:\n",
+    "            ds = xr.open_dataset(data_dir + f\"su{subj}_st{n_states}_lg{n_lags}co{n_components}_data.nc\")\n",
+    "            try:\n",
+    "                idx = np.searchsorted(ds[\"IC\"].values, IC)\n",
+    "                if ds[\"IC\"].values[idx]==IC: \n",
+    "                    for state in ds[\"states\"].values:\n",
+    "                        color = f\"C{state-1}\"\n",
+    "                        for trial in range(1, n_trials_to_plot+1):\n",
+    "                            ax = f_axes[n_trials_to_plot*(state-1)+trial-1]\n",
+    "                            ax.fill_between(ds[\"time\"], ds[\"states_timecourse\"].values[idx, trial, :, state-1], \n",
+    "                                            color=color)\n",
+    "                            ax.set_xlim([ds[\"time\"].values[0], ds[\"time\"].values[-1]])\n",
+    "                            ax.set_ylim([0, 1])\n",
+    "                            ax.set_ylabel(f\"Prob. st{state} tr{trial}\")\n",
+    "                    ax.set_xlabel(\"Time (s)\")\n",
+    "                    # fig.savefig(figures_dir + f'tcourses-{n_states}states-subj{subj}-IC{IC}.png', dpi=300)\n",
+    "#                     plt.close(fig)\n",
+    "            except:\n",
+    "                print(f\"IC{IC} of subject {subj} does not exist\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "id": "P5MjEYOQZjcv"
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "colab": {
+   "collapsed_sections": [],
+   "name": "1_TDE-HMM-Univariate.ipynb",
+   "provenance": []
+  },
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 1
+}

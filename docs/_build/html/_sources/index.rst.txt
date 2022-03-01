@@ -15,7 +15,7 @@ salut à tous
 
    theory.rst
    user_guide.rst
-   cluster_decoder.rst
+   api_reference.rst
    example.rst
 
 
