@@ -12,7 +12,7 @@ from myHmmPackage.cluster_decoding import *
 from myHmmPackage.cluster_decoder import *
 from sklearn.utils.estimator_checks import check_estimator
 from myHmmPackage.tde_hmm import *
-
+# import block_C
 
 #Le dossier "data" contenant les données doit se trouver dans le dossier mère
 
@@ -101,6 +101,7 @@ elif TEST == "cluster_decoder":
 
 
     decoder.fit(X,y)
+
     plt.imshow(decoder.gamma_.T, aspect='auto')
     plt.show()
 

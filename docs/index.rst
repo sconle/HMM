@@ -6,7 +6,19 @@
 Welcome to neuroHMM's documentation!
 ====================================
 
-salut à tous
+NeuroHMM is a package for neuroscience data using Hidden Markov Model (HMM).
+It is a Python library that provides various tools to analyse, process and display
+the data. The project is made by 5 students from the Engineering School of Centrale
+Marseille and in partnership with The Timone Neuroscience Institute.
+
+Here you will find easy to use methods to decode a signal from an electroencephalogram
+thanks to HMM.
+
+In the section "Theory", we explained everything you need to understand how the
+model works such as mathematics underneath. The "User guide" will help you to
+have a proper installation of the library. The methods are described in the "API".
+Eventually at the end, you will find some examples.
+
 
 .. toctree::
    :maxdepth: 2
