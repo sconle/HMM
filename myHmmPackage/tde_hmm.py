@@ -41,8 +41,6 @@ class TDE_HMM(GaussianHMM):
             algorithm="viterbi", random_state=None,
             n_iter=10, tol=1e-2, verbose=False,
             params="stmc", init_params="stmc",
-            n_fenetre=10,
-            implementation="log"
     ):
         """
             Parameters
@@ -108,14 +106,21 @@ class TDE_HMM(GaussianHMM):
                          n_iter=n_iter, tol=tol, verbose=verbose,
                          params=params, init_params=init_params)
 
-    def fit(self, X):
+    def fit(self, X, y=None):
         X = self.__signal_crante(X)
         super().fit(X)
+
         return self
 
-    def predict_proba(self, X):
-        X = self.__signal_crante(X)
-        return super().predict_proba(X)
+    def predict_proba(self, X, y=None):
+        n_samples, n_time_points, _ = X.shape
+        n_fenetre = 10
+        X = self.__signal_crante(X, n_fenetre)
+        posteriors = super().predict_proba(X)
+        padding = np.zeros((n_fenetre, self.n_components))
+        posteriors = np.concatenate((posteriors, padding))
+        posteriors = np.reshape(posteriors, (n_samples, n_time_points, posteriors.shape[1]))
+        return posteriors
 
     def __signal_crante(self, X, n_fenetre=10):
         # On récupère un signal
