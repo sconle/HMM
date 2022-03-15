@@ -59,7 +59,7 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         :param array-like X: The training input samples (brain data) of shape=(n_samples, n_time_points, n_regions)
         :param array-like y: The target values, An array of int and of shape=(n_samples, n_time_points, n_label_features)
 
-        :returns self: Returns self
+        :returns: Returns self
         """
 
         # Check that X and y have correct shape
@@ -105,7 +105,7 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         given X.
 
         :param X: The training input samples (brain data) of shape=(n_samples, n_time_points, n_regions)
-        :returns y_predict: The predicted labels in an tensor of shape=(n_samples, n_time_points, n_label_features)
+        :returns: Returns y_predict, the predicted labels in an tensor of shape=(n_samples, n_time_points, n_label_features)
         """
         y_predict_states = np.zeros((self.n_clusters, X.shape[0], X.shape[1], self.decoding_mats_.shape[2]))
         for state in range(self.n_clusters):
