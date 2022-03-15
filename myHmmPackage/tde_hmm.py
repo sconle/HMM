@@ -114,7 +114,7 @@ class TDE_HMM(GaussianHMM):
 
     def predict_proba(self, X, y=None):
         n_samples, n_time_points, _ = X.shape
-        n_fenetre = 10
+        n_fenetre = 20
         X = self.__signal_crante(X, n_fenetre)
         posteriors = super().predict_proba(X)
         padding = np.zeros((n_fenetre, self.n_components))
@@ -122,7 +122,7 @@ class TDE_HMM(GaussianHMM):
         posteriors = np.reshape(posteriors, (n_samples, n_time_points, posteriors.shape[1]))
         return posteriors
 
-    def __signal_crante(self, X, n_fenetre=10):
+    def __signal_crante(self, X, n_fenetre=20):
         # On récupère un signal
         X = X[:, :, 0]
 
