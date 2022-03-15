@@ -10,16 +10,23 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
     The metaparameters are gamma_(ndarray, shape (n_time_points, n_clusters)) and
     decoding_mats_(ndarray, shape (n_clusters, n_time_points, n_label_features))
 
+    :param int n_clusters: Number of desired clusters. default=4
+    :param ndarray gamma_init: The initial value of gamma_. shape=(n_time_points, n_clusters) or None.
+                                default=None
+    :param ndarray decoding_mats_init: The initial value of decoding_mats_.
+                                        shape=(n_clusters, n_time_points, n_label_features) or None. default=None
+    :param str method: Name of the decoding method used among 'sequential' or 'regression'. default='regression'
+    :param str measure: Measure used for the 'sequential' method. default='error'
+    :param int max_iter: Number of iterations. default=100
+    :param float reg_param: Regularization parameter. default=10e-5
+    :param ndarray transition_scheme: Constraints for the cluster transitions. shape=(n_clusters, n_clusters) or None.
+                                        default=None
+    :param ndarray init_scheme: Initial probability for each cluster. shape=(n_clusters,) or None. default=None
 
-    :param int n_clusters: number of desired clusters (default= 4)
-    :param ndarray gamma_init: shape=(n_time_points, n_clusters) or None, (default=None)
-    :param ndarray decoding_mats_init: shape=(n_clusters, n_time_points, n_label_features) or None, (default=None)
-    :param str method: name of the method used (default='regression')
-    :param str measure: default='error'
-    :param int max_iter: default=100
-    :param float reg_param: default=10e-5
-    :param ndarray transition_scheme: shape=(n_clusters, n_clusters) or None (default=None)
-    :param ndarray init_scheme: shape=(n_clusters,) or None (default=None)
+    :cvar ndarray gamma_: The tensor containing each cluster's probability time-course,
+                            of shape=(n_time_points, n_clusters).
+    :cvar ndarray decoding_mats_: The tensor containing the decoding matrices associated to each cluster,
+                                    of shape=(n_clusters, n_time_points, n_label_features).
     """
     def __init__(
             self,
@@ -46,13 +53,13 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
     def fit(self, X, y):
 
         """
-        A reference implementation of a fitting function for a classifier.
+        Estimate model parameters.
 
 
-        :param array-like X: The training input samples of shape=(n_samples, n_time_points, n_regions)
+        :param array-like X: The training input samples (brain data) of shape=(n_samples, n_time_points, n_regions)
         :param array-like y: The target values, An array of int and of shape=(n_samples, n_time_points, n_label_features)
 
-        :returns: Returns self
+        :returns self: Returns self
         """
 
         # Check that X and y have correct shape
@@ -94,9 +101,11 @@ class ClusterDecoder(BaseEstimator, RegressorMixin):
         # return y_predict
 
         """
+        Find most likely state sequence corresponding to X, then computes y_predict, the predicted labels
+        given X.
 
-        :param X:
-        :return:
+        :param X: The training input samples (brain data) of shape=(n_samples, n_time_points, n_regions)
+        :returns y_predict: The predicted labels in an tensor of shape=(n_samples, n_time_points, n_label_features)
         """
         y_predict_states = np.zeros((self.n_clusters, X.shape[0], X.shape[1], self.decoding_mats_.shape[2]))
         for state in range(self.n_clusters):
