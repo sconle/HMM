@@ -6,7 +6,9 @@
 Welcome to neuroHMM's documentation!
 ====================================
 
-salut à tous
+The neuroHMM project started as a student project in collaboration with
+the Neuroscience Institute of La Timone.
+
 
 .. toctree::
    :maxdepth: 2
