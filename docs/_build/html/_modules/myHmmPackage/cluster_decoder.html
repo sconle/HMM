@@ -81,16 +81,23 @@
 <span class="sd">    The metaparameters are gamma_(ndarray, shape (n_time_points, n_clusters)) and</span>
 <span class="sd">    decoding_mats_(ndarray, shape (n_clusters, n_time_points, n_label_features))</span>
 
+<span class="sd">    :param int n_clusters: Number of desired clusters. default=4</span>
+<span class="sd">    :param ndarray gamma_init: The initial value of gamma_. shape=(n_time_points, n_clusters) or None.</span>
+<span class="sd">                                default=None</span>
+<span class="sd">    :param ndarray decoding_mats_init: The initial value of decoding_mats_.</span>
+<span class="sd">                                        shape=(n_clusters, n_time_points, n_label_features) or None. default=None</span>
+<span class="sd">    :param str method: Name of the decoding method used among &#39;sequential&#39; or &#39;regression&#39;. default=&#39;regression&#39;</span>
+<span class="sd">    :param str measure: Measure used for the &#39;sequential&#39; method. default=&#39;error&#39;</span>
+<span class="sd">    :param int max_iter: Number of iterations. default=100</span>
+<span class="sd">    :param float reg_param: Regularization parameter. default=10e-5</span>
+<span class="sd">    :param ndarray transition_scheme: Constraints for the cluster transitions. shape=(n_clusters, n_clusters) or None.</span>
+<span class="sd">                                        default=None</span>
+<span class="sd">    :param ndarray init_scheme: Initial probability for each cluster. shape=(n_clusters,) or None. default=None</span>
 
-<span class="sd">    :param int n_clusters: number of desired clusters (default= 4)</span>
-<span class="sd">    :param ndarray gamma_init: shape=(n_time_points, n_clusters) or None, (default=None)</span>
-<span class="sd">    :param ndarray decoding_mats_init: shape=(n_clusters, n_time_points, n_label_features) or None, (default=None)</span>
-<span class="sd">    :param str method: name of the method used (default=&#39;regression&#39;)</span>
-<span class="sd">    :param str measure: default=&#39;error&#39;</span>
-<span class="sd">    :param int max_iter: default=100</span>
-<span class="sd">    :param float reg_param: default=10e-5</span>
-<span class="sd">    :param ndarray transition_scheme: shape=(n_clusters, n_clusters) or None (default=None)</span>
-<span class="sd">    :param ndarray init_scheme: shape=(n_clusters,) or None (default=None)</span>
+<span class="sd">    :cvar ndarray gamma_: The tensor containing each cluster&#39;s probability time-course,</span>
+<span class="sd">                            of shape=(n_time_points, n_clusters).</span>
+<span class="sd">    :cvar ndarray decoding_mats_: The tensor containing the decoding matrices associated to each cluster,</span>
+<span class="sd">                                    of shape=(n_clusters, n_time_points, n_label_features).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
@@ -117,10 +124,10 @@
 <div class="viewcode-block" id="ClusterDecoder.fit"><a class="viewcode-back" href="../../cluster_decoder.html#myHmmPackage.cluster_decoder.ClusterDecoder.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
 
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        A reference implementation of a fitting function for a classifier.</span>
+<span class="sd">        Estimate model parameters.</span>
 
 
-<span class="sd">        :param array-like X: The training input samples of shape=(n_samples, n_time_points, n_regions)</span>
+<span class="sd">        :param array-like X: The training input samples (brain data) of shape=(n_samples, n_time_points, n_regions)</span>
 <span class="sd">        :param array-like y: The target values, An array of int and of shape=(n_samples, n_time_points, n_label_features)</span>
 
 <span class="sd">        :returns: Returns self</span>
@@ -165,9 +172,11 @@
         <span class="c1"># return y_predict</span>
 
         <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find most likely state sequence corresponding to X, then computes y_predict, the predicted labels</span>
+<span class="sd">        given X.</span>
 
-<span class="sd">        :param X:</span>
-<span class="sd">        :return:</span>
+<span class="sd">        :param X: The training input samples (brain data) of shape=(n_samples, n_time_points, n_regions)</span>
+<span class="sd">        :returns: Returns y_predict, the predicted labels in an tensor of shape=(n_samples, n_time_points, n_label_features)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">y_predict_states</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoding_mats_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
         <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_clusters</span><span class="p">):</span>

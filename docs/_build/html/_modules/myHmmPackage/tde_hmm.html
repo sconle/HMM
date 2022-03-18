@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>myHmmPackage.tde_hmm &mdash; neuroHMM  documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> neuroHMM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory.html">Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_reference.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../example.html">Examples</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">neuroHMM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>myHmmPackage.tde_hmm</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for myHmmPackage.tde_hmm</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">RegressorMixin</span>
+<span class="kn">from</span> <span class="nn">hmmlearn.hmm</span> <span class="kn">import</span> <span class="n">GaussianHMM</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils.validation</span> <span class="kn">import</span> <span class="n">check_X_y</span><span class="p">,</span> <span class="n">check_array</span><span class="p">,</span> <span class="n">check_is_fitted</span>
+
+
+<div class="viewcode-block" id="TDE_HMM"><a class="viewcode-back" href="../../tde_hmm.html#myHmmPackage.tde_hmm.TDE_HMM">[docs]</a><span class="k">class</span> <span class="nc">TDE_HMM</span><span class="p">(</span><span class="n">GaussianHMM</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    TDE_HMM is an Estimator that performs supervised decoding with a predefined number of decoding matrices.</span>
+<span class="sd">    A clustering method is used to choose which decoding matrix to use for each sample of each input data.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">     n_features : int</span>
+<span class="sd">        Dimensionality of the Gaussian emissions.</span>
+<span class="sd">    monitor_ : ConvergenceMonitor</span>
+<span class="sd">        Monitor object used to check the convergence of EM.</span>
+<span class="sd">    startprob_ : array, shape (n_components, )</span>
+<span class="sd">        Initial state occupation distribution.</span>
+<span class="sd">    transmat_ : array, shape (n_components, n_components)</span>
+<span class="sd">        Matrix of transition probabilities between states.</span>
+<span class="sd">    means_ : array, shape (n_components, n_features)</span>
+<span class="sd">        Mean parameters for each state.</span>
+<span class="sd">    covars_ : array</span>
+<span class="sd">        Covariance parameters for each state.</span>
+<span class="sd">        The shape depends on :attr:`covariance_type`:</span>
+<span class="sd">        * (n_components, )                        if &quot;spherical&quot;,</span>
+<span class="sd">        * (n_components, n_features)              if &quot;diag&quot;,</span>
+<span class="sd">        * (n_components, n_features, n_features)  if &quot;full&quot;,</span>
+<span class="sd">        * (n_features, n_features)                if &quot;tied&quot;.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">n_components</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">covariance_type</span><span class="o">=</span><span class="s1">&#39;full&#39;</span><span class="p">,</span>
+            <span class="n">min_covar</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
+            <span class="n">startprob_prior</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">transmat_prior</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+            <span class="n">means_prior</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">means_weight</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">covars_prior</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span> <span class="n">covars_weight</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">algorithm</span><span class="o">=</span><span class="s2">&quot;viterbi&quot;</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">n_iter</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="s2">&quot;stmc&quot;</span><span class="p">,</span> <span class="n">init_params</span><span class="o">=</span><span class="s2">&quot;stmc&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    n_components : int</span>
+<span class="sd">            Number of states.</span>
+<span class="sd">        covariance_type : {&quot;sperical&quot;, &quot;diag&quot;, &quot;full&quot;, &quot;tied&quot;}, optional</span>
+<span class="sd">            The type of covariance parameters to use:</span>
+<span class="sd">            * &quot;spherical&quot; --- each state uses a single variance value that</span>
+<span class="sd">              applies to all features (default).</span>
+<span class="sd">            * &quot;diag&quot; --- each state uses a diagonal covariance matrix.</span>
+<span class="sd">            * &quot;full&quot; --- each state uses a full (i.e. unrestricted)</span>
+<span class="sd">              covariance matrix.</span>
+<span class="sd">            * &quot;tied&quot; --- all states use **the same** full covariance matrix.</span>
+<span class="sd">        min_covar : float, optional</span>
+<span class="sd">            Floor on the diagonal of the covariance matrix to prevent</span>
+<span class="sd">            overfitting. Defaults to 1e-3.</span>
+<span class="sd">        startprob_prior : array, shape (n_components, ), optional</span>
+<span class="sd">            Parameters of the Dirichlet prior distribution for</span>
+<span class="sd">            :attr:`startprob_`.</span>
+<span class="sd">        transmat_prior : array, shape (n_components, n_components), optional</span>
+<span class="sd">            Parameters of the Dirichlet prior distribution for each row</span>
+<span class="sd">            of the transition probabilities :attr:`transmat_`.</span>
+<span class="sd">        means_prior, means_weight : array, shape (n_components, ), optional</span>
+<span class="sd">            Mean and precision of the Normal prior distribtion for</span>
+<span class="sd">            :attr:`means_`.</span>
+<span class="sd">        covars_prior, covars_weight : array, shape (n_components, ), optional</span>
+<span class="sd">            Parameters of the prior distribution for the covariance matrix</span>
+<span class="sd">            :attr:`covars_`.</span>
+<span class="sd">            If :attr:`covariance_type` is &quot;spherical&quot; or &quot;diag&quot; the prior is</span>
+<span class="sd">            the inverse gamma distribution, otherwise --- the inverse Wishart</span>
+<span class="sd">            distribution.</span>
+<span class="sd">        algorithm : {&quot;viterbi&quot;, &quot;map&quot;}, optional</span>
+<span class="sd">            Decoder algorithm.</span>
+<span class="sd">        random_state: RandomState or an int seed, optional</span>
+<span class="sd">            A random number generator instance.</span>
+<span class="sd">        n_iter : int, optional</span>
+<span class="sd">            Maximum number of iterations to perform.</span>
+<span class="sd">        tol : float, optional</span>
+<span class="sd">            Convergence threshold. EM will stop if the gain in log-likelihood</span>
+<span class="sd">            is below this value.</span>
+<span class="sd">        verbose : bool, optional</span>
+<span class="sd">            Whether per-iteration convergence reports are printed to</span>
+<span class="sd">            :data:`sys.stderr`.  Convergence can also be diagnosed using the</span>
+<span class="sd">            :attr:`monitor_` attribute.</span>
+<span class="sd">        params, init_params : string, optional</span>
+<span class="sd">            The parameters that get updated during (``params``) or initialized</span>
+<span class="sd">            before (``init_params``) the training.  Can contain any combination</span>
+<span class="sd">            of &#39;s&#39; for startprob, &#39;t&#39; for transmat, &#39;m&#39; for means, and &#39;c&#39; for</span>
+<span class="sd">            covars.  Defaults to all parameters.</span>
+<span class="sd">        implementation: string, optional</span>
+<span class="sd">            Determines if the forward-backward algorithm is implemented with</span>
+<span class="sd">            logarithms (&quot;log&quot;), or using scaling (&quot;scaling&quot;).  The default is</span>
+<span class="sd">            to use logarithms for backwards compatability.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="n">n_components</span><span class="p">,</span>
+                         <span class="n">covariance_type</span><span class="o">=</span><span class="n">covariance_type</span><span class="p">,</span> <span class="n">min_covar</span><span class="o">=</span><span class="n">min_covar</span><span class="p">,</span>
+                         <span class="n">startprob_prior</span><span class="o">=</span><span class="n">startprob_prior</span><span class="p">,</span> <span class="n">transmat_prior</span><span class="o">=</span><span class="n">transmat_prior</span><span class="p">,</span>
+                         <span class="n">means_prior</span><span class="o">=</span><span class="n">means_prior</span><span class="p">,</span> <span class="n">means_weight</span><span class="o">=</span><span class="n">means_weight</span><span class="p">,</span>
+                         <span class="n">covars_prior</span><span class="o">=</span><span class="n">covars_prior</span><span class="p">,</span> <span class="n">covars_weight</span><span class="o">=</span><span class="n">covars_weight</span><span class="p">,</span>
+                         <span class="n">algorithm</span><span class="o">=</span><span class="n">algorithm</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+                         <span class="n">n_iter</span><span class="o">=</span><span class="n">n_iter</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="n">tol</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+                         <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span> <span class="n">init_params</span><span class="o">=</span><span class="n">init_params</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TDE_HMM.fit"><a class="viewcode-back" href="../../tde_hmm.html#myHmmPackage.tde_hmm.TDE_HMM.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__signal_crante</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="TDE_HMM.predict_proba"><a class="viewcode-back" href="../../tde_hmm.html#myHmmPackage.tde_hmm.TDE_HMM.predict_proba">[docs]</a>    <span class="k">def</span> <span class="nf">predict_proba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_time_points</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">n_fenetre</span> <span class="o">=</span> <span class="mi">20</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__signal_crante</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">n_fenetre</span><span class="p">)</span>
+        <span class="n">posteriors</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="n">padding</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_fenetre</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">))</span>
+        <span class="n">posteriors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">posteriors</span><span class="p">,</span> <span class="n">padding</span><span class="p">))</span>
+        <span class="n">posteriors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">posteriors</span><span class="p">,</span> <span class="p">(</span><span class="n">n_samples</span><span class="p">,</span> <span class="n">n_time_points</span><span class="p">,</span> <span class="n">posteriors</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">posteriors</span></div>
+
+    <span class="k">def</span> <span class="nf">__signal_crante</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">n_fenetre</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
+        <span class="c1"># On récupère un signal</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># On concatène pour obtenir qu&#39;un seul array</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># On découpe le signal en plusieurs sous signaux décalés d&#39;un cran</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="n">signal_crante</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span> <span class="o">-</span> <span class="n">n_fenetre</span><span class="p">,</span> <span class="n">n_fenetre</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="n">n_fenetre</span><span class="p">):</span>
+            <span class="n">signal_crante</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="n">n_fenetre</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">signal_crante</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Audren Butery, Timothée Fronteau, Solenzio Konlé, Vincent Mousseaux, Valentin Truong Minh Ky.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -6,3 +6,4 @@ API Reference
     :caption: Modules
 
     cluster_decoder.rst
+    tde_hmm.rst

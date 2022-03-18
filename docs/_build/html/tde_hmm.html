@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TDE-HMM &mdash; neuroHMM  documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Examples" href="example.html" />
+    <link rel="prev" title="Cluster Decoder" href="cluster_decoder.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> neuroHMM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="theory.html">Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api_reference.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="cluster_decoder.html">Cluster Decoder</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">TDE-HMM</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">Examples</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">neuroHMM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="api_reference.html">API Reference</a> &raquo;</li>
+      <li>TDE-HMM</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/tde_hmm.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="tde-hmm">
+<h1>TDE-HMM<a class="headerlink" href="#tde-hmm" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt id="myHmmPackage.tde_hmm.TDE_HMM">
+<em class="property">class </em><code class="sig-prename descclassname">myHmmPackage.tde_hmm.</code><code class="sig-name descname">TDE_HMM</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n_components</span><span class="o">=</span><span class="default_value">3</span></em>, <em class="sig-param"><span class="n">covariance_type</span><span class="o">=</span><span class="default_value">'full'</span></em>, <em class="sig-param"><span class="n">min_covar</span><span class="o">=</span><span class="default_value">0.001</span></em>, <em class="sig-param"><span class="n">startprob_prior</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">transmat_prior</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">means_prior</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">means_weight</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">covars_prior</span><span class="o">=</span><span class="default_value">0.01</span></em>, <em class="sig-param"><span class="n">covars_weight</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">algorithm</span><span class="o">=</span><span class="default_value">'viterbi'</span></em>, <em class="sig-param"><span class="n">random_state</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">n_iter</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">tol</span><span class="o">=</span><span class="default_value">0.01</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">params</span><span class="o">=</span><span class="default_value">'stmc'</span></em>, <em class="sig-param"><span class="n">init_params</span><span class="o">=</span><span class="default_value">'stmc'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/myHmmPackage/tde_hmm.html#TDE_HMM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#myHmmPackage.tde_hmm.TDE_HMM" title="Permalink to this definition"></a></dt>
+<dd><p>TDE_HMM is an Estimator that performs supervised decoding with a predefined number of decoding matrices.
+A clustering method is used to choose which decoding matrix to use for each sample of each input data.</p>
+<dl class="py attribute">
+<dt id="myHmmPackage.tde_hmm.TDE_HMM.n_features">
+<code class="sig-name descname">n_features</code><a class="headerlink" href="#myHmmPackage.tde_hmm.TDE_HMM.n_features" title="Permalink to this definition"></a></dt>
+<dd><p>Dimensionality of the Gaussian emissions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="simple">
+<dt><a href="#id1"><span class="problematic" id="id2">monitor_</span></a><span class="classifier">ConvergenceMonitor</span></dt><dd><p>Monitor object used to check the convergence of EM.</p>
+</dd>
+<dt><a href="#id3"><span class="problematic" id="id4">startprob_</span></a><span class="classifier">array, shape (n_components, )</span></dt><dd><p>Initial state occupation distribution.</p>
+</dd>
+<dt><a href="#id5"><span class="problematic" id="id6">transmat_</span></a><span class="classifier">array, shape (n_components, n_components)</span></dt><dd><p>Matrix of transition probabilities between states.</p>
+</dd>
+<dt><a href="#id7"><span class="problematic" id="id8">means_</span></a><span class="classifier">array, shape (n_components, n_features)</span></dt><dd><p>Mean parameters for each state.</p>
+</dd>
+<dt><a href="#id9"><span class="problematic" id="id10">covars_</span></a><span class="classifier">array</span></dt><dd><p>Covariance parameters for each state.
+The shape depends on <code class="xref py py-attr docutils literal notranslate"><span class="pre">covariance_type</span></code>:
+* (n_components, )                        if “spherical”,
+* (n_components, n_features)              if “diag”,
+* (n_components, n_features, n_features)  if “full”,
+* (n_features, n_features)                if “tied”.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="myHmmPackage.tde_hmm.TDE_HMM.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">X</span></em>, <em class="sig-param"><span class="n">y</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/myHmmPackage/tde_hmm.html#TDE_HMM.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#myHmmPackage.tde_hmm.TDE_HMM.fit" title="Permalink to this definition"></a></dt>
+<dd><p>Estimate model parameters.</p>
+<p>An initialization step is performed before entering the
+EM algorithm. If you want to avoid this step for a subset of
+the parameters, pass proper <code class="docutils literal notranslate"><span class="pre">init_params</span></code> keyword argument
+to estimator’s constructor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>array-like</em><em>, </em><em>shape</em><em> (</em><em>n_samples</em><em>, </em><em>n_features</em><em>)</em>) – Feature matrix of individual samples.</p></li>
+<li><p><strong>lengths</strong> (<em>array-like of integers</em><em>, </em><em>shape</em><em> (</em><em>n_sequences</em><em>, </em><em>)</em>) – Lengths of the individual sequences in <code class="docutils literal notranslate"><span class="pre">X</span></code>. The sum of
+these should be <code class="docutils literal notranslate"><span class="pre">n_samples</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>self</strong> – Returns self.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="myHmmPackage.tde_hmm.TDE_HMM.predict_proba">
+<code class="sig-name descname">predict_proba</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">X</span></em>, <em class="sig-param"><span class="n">y</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/myHmmPackage/tde_hmm.html#TDE_HMM.predict_proba"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#myHmmPackage.tde_hmm.TDE_HMM.predict_proba" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the posterior probability for each state in the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>array-like</em><em>, </em><em>shape</em><em> (</em><em>n_samples</em><em>, </em><em>n_features</em><em>)</em>) – Feature matrix of individual samples.</p></li>
+<li><p><strong>lengths</strong> (<em>array-like of integers</em><em>, </em><em>shape</em><em> (</em><em>n_sequences</em><em>, </em><em>)</em><em>, </em><em>optional</em>) – Lengths of the individual sequences in <code class="docutils literal notranslate"><span class="pre">X</span></code>. The sum of
+these should be <code class="docutils literal notranslate"><span class="pre">n_samples</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>posteriors</strong> – State-membership probabilities for each sample from <code class="docutils literal notranslate"><span class="pre">X</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array, shape (n_samples, n_components)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="cluster_decoder.html" class="btn btn-neutral float-left" title="Cluster Decoder" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="example.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Audren Butery, Timothée Fronteau, Solenzio Konlé, Vincent Mousseaux, Valentin Truong Minh Ky.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
