@@ -5,5 +5,5 @@ Examples
     :maxdepth: 1
     :caption: Examples
 
-    tde_hmm_example.ipynb
+    data_generation.ipynb
     tde_hmm_example_our_data.ipynb
