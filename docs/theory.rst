@@ -1,9 +1,9 @@
 Theory
 ======
 
-**What is HMM ?**
+**What is a hidden Markov model (HMM) ?**
 
-HMM stand for Hidden Markov Model.
+
 
 .. toctree::
     :maxdepth: 1
