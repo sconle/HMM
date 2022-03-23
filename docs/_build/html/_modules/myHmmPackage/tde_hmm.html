@@ -80,26 +80,27 @@
 <span class="sd">    TDE_HMM is an Estimator that performs supervised decoding with a predefined number of decoding matrices.</span>
 <span class="sd">    A clustering method is used to choose which decoding matrix to use for each sample of each input data.</span>
 
-<span class="sd">    Attributes</span>
-<span class="sd">    ----------</span>
-<span class="sd">     n_features : int</span>
-<span class="sd">        Dimensionality of the Gaussian emissions.</span>
-<span class="sd">    monitor_ : ConvergenceMonitor</span>
-<span class="sd">        Monitor object used to check the convergence of EM.</span>
-<span class="sd">    startprob_ : array, shape (n_components, )</span>
-<span class="sd">        Initial state occupation distribution.</span>
-<span class="sd">    transmat_ : array, shape (n_components, n_components)</span>
-<span class="sd">        Matrix of transition probabilities between states.</span>
-<span class="sd">    means_ : array, shape (n_components, n_features)</span>
-<span class="sd">        Mean parameters for each state.</span>
-<span class="sd">    covars_ : array</span>
-<span class="sd">        Covariance parameters for each state.</span>
-<span class="sd">        The shape depends on :attr:`covariance_type`:</span>
-<span class="sd">        * (n_components, )                        if &quot;spherical&quot;,</span>
-<span class="sd">        * (n_components, n_features)              if &quot;diag&quot;,</span>
-<span class="sd">        * (n_components, n_features, n_features)  if &quot;full&quot;,</span>
-<span class="sd">        * (n_features, n_features)                if &quot;tied&quot;.</span>
-
+<span class="sd">    :param int n_components: Number of states. Default 3</span>
+<span class="sd">    :param int n_iter: Optional. Maximum number of iterations to perform.</span>
+<span class="sd">    :param str covariance_type: Optional. The type of covariance parameters to use:</span>
+<span class="sd">            * &quot;spherical&quot; --- each state uses a single variance value that</span>
+<span class="sd">              applies to all features (default).</span>
+<span class="sd">            * &quot;diag&quot; --- each state uses a diagonal covariance matrix.</span>
+<span class="sd">            * &quot;full&quot; --- each state uses a full (i.e. unrestricted)</span>
+<span class="sd">              covariance matrix.</span>
+<span class="sd">            * &quot;tied&quot; --- all states use **the same** full covariance matrix.</span>
+<span class="sd">    :param float min_covar: Optional. Floor on the diagonal of the covariance matrix to prevent overfitting. Defaults to 1e-3.</span>
+<span class="sd">    :param array startprob_prior: Optional. Shape of (n_components, ). Parameters of the Dirichlet prior distribution for :attr:`startprob_`.</span>
+<span class="sd">    :param array transmat_prior: Optional. Shape of (n_components, n_components). Parameters of the Dirichlet prior distribution for each row of the transition probabilities :attr:`transmat_`.</span>
+<span class="sd">    :param array means_prior/means_weight: Optional. Shape of (n_components, ). Mean and precision of the Normal prior distribtion for :attr:`means_`.</span>
+<span class="sd">    :param array covars_prior/covars_weight: Optional. Shape of (n_components, ). Parameters of the prior distribution for the covariance matrix :attr:`covars_`.</span>
+<span class="sd">            If :attr:`covariance_type` is &quot;spherical&quot; or &quot;diag&quot; the prior is the inverse gamma distribution, otherwise --- the inverse Wishart distribution.</span>
+<span class="sd">    :param str algorithm: Optional. {&quot;viterbi&quot;, &quot;map&quot;} Decoder algorithm.</span>
+<span class="sd">    :param int_seed random_state: Optional. A random number generator instance.</span>
+<span class="sd">    :param float tol: Optional. Convergence threshold. EM will stop if the gain in log-likelihood is below this value.</span>
+<span class="sd">    :param bool verbose: Optional. Whether per-iteration convergence reports are printed to :data:`sys.stderr`.  Convergence can also be diagnosed using the :attr:`monitor_` attribute.</span>
+<span class="sd">    :param str params/init_params: Optional. The parameters that get updated during (``params``) or initialized before (``init_params``) the training.  Can contain any combination of &#39;s&#39; for startprob, &#39;t&#39; for transmat, &#39;m&#39; for means, and &#39;c&#39; for covars.  Defaults to all parameters.</span>
+<span class="sd">    :param str implementation: Optional. Determines if the forward-backward algorithm is implemented with logarithms (&quot;log&quot;), or using scaling (&quot;scaling&quot;).  The default is to use logarithms for backwards compatability.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
@@ -113,60 +114,7 @@
             <span class="n">n_iter</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">params</span><span class="o">=</span><span class="s2">&quot;stmc&quot;</span><span class="p">,</span> <span class="n">init_params</span><span class="o">=</span><span class="s2">&quot;stmc&quot;</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    n_components : int</span>
-<span class="sd">            Number of states.</span>
-<span class="sd">        covariance_type : {&quot;sperical&quot;, &quot;diag&quot;, &quot;full&quot;, &quot;tied&quot;}, optional</span>
-<span class="sd">            The type of covariance parameters to use:</span>
-<span class="sd">            * &quot;spherical&quot; --- each state uses a single variance value that</span>
-<span class="sd">              applies to all features (default).</span>
-<span class="sd">            * &quot;diag&quot; --- each state uses a diagonal covariance matrix.</span>
-<span class="sd">            * &quot;full&quot; --- each state uses a full (i.e. unrestricted)</span>
-<span class="sd">              covariance matrix.</span>
-<span class="sd">            * &quot;tied&quot; --- all states use **the same** full covariance matrix.</span>
-<span class="sd">        min_covar : float, optional</span>
-<span class="sd">            Floor on the diagonal of the covariance matrix to prevent</span>
-<span class="sd">            overfitting. Defaults to 1e-3.</span>
-<span class="sd">        startprob_prior : array, shape (n_components, ), optional</span>
-<span class="sd">            Parameters of the Dirichlet prior distribution for</span>
-<span class="sd">            :attr:`startprob_`.</span>
-<span class="sd">        transmat_prior : array, shape (n_components, n_components), optional</span>
-<span class="sd">            Parameters of the Dirichlet prior distribution for each row</span>
-<span class="sd">            of the transition probabilities :attr:`transmat_`.</span>
-<span class="sd">        means_prior, means_weight : array, shape (n_components, ), optional</span>
-<span class="sd">            Mean and precision of the Normal prior distribtion for</span>
-<span class="sd">            :attr:`means_`.</span>
-<span class="sd">        covars_prior, covars_weight : array, shape (n_components, ), optional</span>
-<span class="sd">            Parameters of the prior distribution for the covariance matrix</span>
-<span class="sd">            :attr:`covars_`.</span>
-<span class="sd">            If :attr:`covariance_type` is &quot;spherical&quot; or &quot;diag&quot; the prior is</span>
-<span class="sd">            the inverse gamma distribution, otherwise --- the inverse Wishart</span>
-<span class="sd">            distribution.</span>
-<span class="sd">        algorithm : {&quot;viterbi&quot;, &quot;map&quot;}, optional</span>
-<span class="sd">            Decoder algorithm.</span>
-<span class="sd">        random_state: RandomState or an int seed, optional</span>
-<span class="sd">            A random number generator instance.</span>
-<span class="sd">        n_iter : int, optional</span>
-<span class="sd">            Maximum number of iterations to perform.</span>
-<span class="sd">        tol : float, optional</span>
-<span class="sd">            Convergence threshold. EM will stop if the gain in log-likelihood</span>
-<span class="sd">            is below this value.</span>
-<span class="sd">        verbose : bool, optional</span>
-<span class="sd">            Whether per-iteration convergence reports are printed to</span>
-<span class="sd">            :data:`sys.stderr`.  Convergence can also be diagnosed using the</span>
-<span class="sd">            :attr:`monitor_` attribute.</span>
-<span class="sd">        params, init_params : string, optional</span>
-<span class="sd">            The parameters that get updated during (``params``) or initialized</span>
-<span class="sd">            before (``init_params``) the training.  Can contain any combination</span>
-<span class="sd">            of &#39;s&#39; for startprob, &#39;t&#39; for transmat, &#39;m&#39; for means, and &#39;c&#39; for</span>
-<span class="sd">            covars.  Defaults to all parameters.</span>
-<span class="sd">        implementation: string, optional</span>
-<span class="sd">            Determines if the forward-backward algorithm is implemented with</span>
-<span class="sd">            logarithms (&quot;log&quot;), or using scaling (&quot;scaling&quot;).  The default is</span>
-<span class="sd">            to use logarithms for backwards compatability.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="n">n_components</span><span class="p">,</span>
                          <span class="n">covariance_type</span><span class="o">=</span><span class="n">covariance_type</span><span class="p">,</span> <span class="n">min_covar</span><span class="o">=</span><span class="n">min_covar</span><span class="p">,</span>
@@ -178,12 +126,29 @@
                          <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span> <span class="n">init_params</span><span class="o">=</span><span class="n">init_params</span><span class="p">)</span>
 
 <div class="viewcode-block" id="TDE_HMM.fit"><a class="viewcode-back" href="../../tde_hmm.html#myHmmPackage.tde_hmm.TDE_HMM.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Estimate model parameters.</span>
+
+
+<span class="sd">        :param array-like X: The training input samples</span>
+<span class="sd">        :param array-like y: The target values</span>
+
+<span class="sd">        :returns: Returns self</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__signal_crante</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span></div>
 
 <div class="viewcode-block" id="TDE_HMM.predict_proba"><a class="viewcode-back" href="../../tde_hmm.html#myHmmPackage.tde_hmm.TDE_HMM.predict_proba">[docs]</a>    <span class="k">def</span> <span class="nf">predict_proba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find most likely state sequence corresponding to X, then computes y_predict, the predicted labels given X.</span>
+
+<span class="sd">        :param X: The training input samples</span>
+<span class="sd">        :returns: Returns posteriors, the predicted labels in an tensor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_time_points</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
         <span class="n">n_fenetre</span> <span class="o">=</span> <span class="mi">20</span>
         <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__signal_crante</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">n_fenetre</span><span class="p">)</span>
